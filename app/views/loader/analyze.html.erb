@@ -14,9 +14,9 @@
         <th><%= l(:tracker) %></th>
         <th><%= link_to_function(l(:start_date), 'clearDates(this);', class: 'start_date') %></th>
         <th><%= link_to_function(l(:end_date), 'clearDates(this);', class: 'end_date') %></th>
-        <%= content_tag(:th, '%') unless ignore_field?(:done_ratio, :import) %></th>
+        <%= content_tag(:th, '%') unless ignore_field?('done_ratio', 'import') %></th>
         <th><%= l(:assigned_to) %></th>
-        <%= content_tag(:th, l(:priority)) unless ignore_field?(:priority, :import) %>
+        <%= content_tag(:th, l(:priority)) unless ignore_field?('priority', 'import') %>
         <th><%= link_to_function(l(:field_is_private), 'toggleCheckboxesSelection(this);', class: 'is_private') %></th>
         <th><%= l(:requires) %></th>
       </tr>
@@ -25,8 +25,8 @@
       <% end %>
       <tr>
         <td align="right" colspan="8">
-          <%= check_box_tag :update_existing, "1", true, class: :update_existing %>
-          <%= label_tag :update_existing, t(:update_existing), {class: :update_existing} %>
+          <%= check_box_tag 'update_existing', "1", true, class: 'update_existing' %>
+          <%= label_tag :update_existing, t(:update_existing), {class: 'update_existing'} %>
         </td>
         <td align="right" colspan="10"><%= f.submit(l(:import_selected), {name: 'import[import_selected]'}) %></td>
         <td><%= link_to(l(:back), new_project_loader_path) %></td>

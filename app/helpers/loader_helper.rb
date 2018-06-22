@@ -7,7 +7,7 @@ module LoaderHelper
     tracker_id = if map_trackers.has_key?(tracker_name)
                    map_trackers[tracker_name]
                  else
-                   @settings[:import][:tracker_id]
+                   @settings['import']['tracker_id']
                  end
     select_tag "import[tasks][#{index}][tracker_id]", options_from_collection_for_select(project.trackers, :id, :name, tracker_id)
   end
@@ -28,7 +28,7 @@ module LoaderHelper
   end
 
   def ignore_field?(field, way)
-    field.to_s.in?(@ignore_fields.send(:fetch, way.to_sym))
+    field.to_s.in?(@ignore_fields.send(:fetch, way))
   end
 
   def duplicate_index task_subject

@@ -13,23 +13,23 @@ module Concerns::Export
 
     export = Nokogiri::XML::Builder.new(encoding: 'UTF-8') do |xml|
       resources = @project.assignable_users
-      xml.Project {
+      xml.Project('xmlns' => 'http://schemas.microsoft.com/project') {
         xml.Title @project.name
         xml.ExtendedAttributes {
           xml.ExtendedAttribute {
             xml.FieldID 188744000
             xml.FieldName 'Text14'
-            xml.Alias @settings[:redmine_status_alias]
+            xml.Alias @settings['redmine_status_alias']
           }
           xml.ExtendedAttribute {
             xml.FieldID 188744001
             xml.FieldName 'Text15'
-            xml.Alias @settings[:redmine_id_alias]
+            xml.Alias @settings['redmine_id_alias']
           }
           xml.ExtendedAttribute {
             xml.FieldID 188744002
             xml.FieldName 'Text16'
-            xml.Alias @settings[:tracker_alias]
+            xml.Alias @settings['tracker_alias']
           }
         }
         xml.Calendars {
@@ -125,16 +125,16 @@ module Concerns::Export
           source_issues.select { |issue| issue.assigned_to_id? && issue.leaf? }.each do |issue|
             @uid += 1
             xml.Assignment {
-              unless ignore_field?(:estimated_hours, :export) && !issue.leaf?
+              unless ignore_field?('estimated_hours', 'export') && !issue.leaf?
                 time = get_scorm_time(issue.estimated_hours)
-                xml.Work time
+                xml.Duration time
                 xml.RegularWork time
                 xml.RemainingWork time
               end
               xml.UID @uid
               xml.TaskUID @task_id_to_uid[issue.id]
               xml.ResourceUID @resource_id_to_uid[issue.assigned_to_id]
-              xml.PercentWorkComplete issue.done_ratio unless ignore_field?(:done_ratio, :export)
+              xml.PercentWorkComplete issue.done_ratio unless ignore_field?('done_ratio', 'export')
               xml.Units 1
               unless issue.total_spent_hours.zero?
                 xml.TimephasedData {
@@ -199,12 +199,12 @@ module Concerns::Export
       xml.UID @uid
       xml.ID id.next
       xml.Name(struct.subject)
-      xml.Notes(struct.description) unless ignore_field?(:description, :export)
+      xml.Notes(struct.description) unless ignore_field?('description', 'export')
       xml.Active 1
       xml.IsNull 0
       xml.CreateDate struct.created_on.to_s(:ms_xml)
       xml.HyperlinkAddress issue_url(struct.issue)
-      xml.Priority(ignore_field?(:priority, :export) ? 500 : get_priority_value(struct.priority.name))
+      xml.Priority(ignore_field?('priority', 'export') ? 500 : get_priority_value(struct.priority.name))
       start_date = struct.issue.next_working_date(struct.start_date || struct.created_on.to_date)
       xml.Start start_date.to_time.to_s(:ms_xml)
       finish_date = if struct.due_date
@@ -224,7 +224,7 @@ module Concerns::Export
       xml.LateStart start_date.to_time.to_s(:ms_xml)
       xml.LateFinish finish_date.to_time.to_s(:ms_xml)
       time = get_scorm_time(struct.estimated_hours)
-      xml.Work time
+      xml.Duration time
       #xml.Duration time
       #xml.ManualDuration time
       #xml.RemainingDuration time

@@ -35,6 +35,7 @@ class LoaderController < ApplicationController
           @import.hashed_name = (File.basename(xmlfile, File.extname(xmlfile)) + Time.now.to_s).hash.abs
           xmldoc = Nokogiri::XML::Document.parse(readxml).remove_namespaces!
           @import.tasks = get_tasks_from_xml(xmldoc)
+        end
 
         subjects = @import.tasks.map(&:subject)
         @duplicates = subjects.select{ |subj| subjects.count(subj) > 1 }.uniq

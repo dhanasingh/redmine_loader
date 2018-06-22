@@ -8,6 +8,7 @@ ActionDispatch::Callbacks.to_prepare do
   SettingsHelper.__send__(:include, SettingsHelperPatch)
   Mailer.__send__(:include, LoaderMailer)
   Issue.__send__(:include, IssuePatch)
+  Redmine::NestedSet::Traversing.__send__(:include, TraversingPatch)
   Redmine::Views::OtherFormatsBuilder.__send__(:include, LoaderOtherFormatsBuilder)
 end
 
@@ -59,7 +60,8 @@ Redmine::Plugin.register :redmine_loader do
   end
 
   menu :project_menu, :loader, { controller: :loader, action: :new },
-    caption: :menu_caption, after: :new_issue, param: :project_id
+    caption: :menu_caption, param: :project_id
+	
 
   Time::DATE_FORMATS.merge!(
     ms_xml: lambda{ |time| time.strftime("%Y-%m-%dT%H:%M:%S") }

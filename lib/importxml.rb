@@ -28,6 +28,7 @@ class Importxml
           issue.subject = source_issue.subject.slice(0, 246) + (issue.new_record? ? '_imported' : '') # Max length of this field is 255
           issue.project_id = project_id
           issue.author_id = user.id
+		  issue.priority_id = source_issue.priority
           issue.is_private = source_issue.try(:is_private) ? 1 : 0
           %w(start_date due_date description done_ratio estimated_hours status_id).each do |field|
             eval("issue.#{field} = source_issue.try(:#{field})")

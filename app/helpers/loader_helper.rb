@@ -24,7 +24,8 @@ module LoaderHelper
                when 601..800 then 'High'
                when 801..1000 then 'Immediate'
                end
-    select_tag "import[tasks][#{index}][priority]", options_from_collection_for_select(IssuePriority.active, :id, :name, priority_name)
+	priorityId = map_priority[priority_name]		   
+    select_tag "import[tasks][#{index}][priority]", options_from_collection_for_select(IssuePriority.active, :id, :name, priorityId)
   end
 
   def ignore_field?(field, way)
@@ -37,5 +38,9 @@ module LoaderHelper
 
   def map_trackers
     @map_trackers ||= Hash[@project.trackers.map { |tracker| [tracker.name, tracker.id] }]
+  end
+  
+  def map_priority
+	@map_priority ||= Hash[IssuePriority.active.map { |priority| [priority.name, priority.id] }]
   end
 end

@@ -1,8 +1,8 @@
-class Import
+class Importxml
   require 'yaml'
 
   @tasks = []
-  @hashed_name = nil
+  #@hashed_name = nil
   NOT_USER_ASSIGNED = -65535
 
   attr_accessor :tasks, :project_id, :hashed_name, :update_existing
@@ -13,7 +13,6 @@ class Import
 
   def self.import_tasks(to_import, project_id, user, hashed_name=nil, update_existing=false, sync_versions=false)
     puts "DEBUG: #{__method__.to_s} started"
-
     # We're going to keep track of new issue ID's to make dependencies work later
     uid_to_issue_id = {}
     # keep track of new Version ID's
@@ -26,7 +25,7 @@ class Import
         unless source_issue.milestone.to_i == 1
           issue = update_existing ? Issue.where("id = ? AND project_id = ?", source_issue.tid, project_id).first_or_initialize : Issue.new
           issue.tracker_id = source_issue.tracker_id
-          issue.subject = source_issue.subject.slice(0, 246) + '_imported' # Max length of this field is 255
+          issue.subject = source_issue.subject.slice(0, 246) + (issue.new_record? ? '_imported' : '') # Max length of this field is 255
           issue.project_id = project_id
           issue.author_id = user.id
           issue.is_private = source_issue.try(:is_private) ? 1 : 0
@@ -38,7 +37,6 @@ class Import
           end
 
           issue.assigned_to_id = source_issue.assigned_to
-
           if issue.save!
             puts "DEBUG: Issue #{issue.subject} imported"
 

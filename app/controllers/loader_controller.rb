@@ -7,7 +7,7 @@ class LoaderController < ApplicationController
   before_filter :get_import_settings, only: [:analyze, :create]
   before_filter :get_export_settings, only: :export
 
-  include Concerns::Import
+  include Concerns::Importxml
   include Concerns::Export
   include QueriesHelper
   include SortHelper
@@ -26,8 +26,7 @@ class LoaderController < ApplicationController
     begin
       xmlfile = params[:import][:xmlfile].try(:tempfile)
       if xmlfile
-        @import = Import.new
-
+        @import = Importxml.new
         byte = xmlfile.getc
         xmlfile.rewind
 
@@ -36,7 +35,6 @@ class LoaderController < ApplicationController
           @import.hashed_name = (File.basename(xmlfile, File.extname(xmlfile)) + Time.now.to_s).hash.abs
           xmldoc = Nokogiri::XML::Document.parse(readxml).remove_namespaces!
           @import.tasks = get_tasks_from_xml(xmldoc)
-        end
 
         subjects = @import.tasks.map(&:subject)
         @duplicates = subjects.select{ |subj| subjects.count(subj) > 1 }.uniq
@@ -53,9 +51,9 @@ class LoaderController < ApplicationController
   end
 
   def create
-    default_tracker_id = @settings[:import][:tracker_id]
-    tasks_per_time = @settings[:import][:instant_import_tasks].to_i
-    import_versions = @settings[:import][:sync_versions] == '1'
+    default_tracker_id = @settings['import']['tracker_id']
+    tasks_per_time = @settings['import']['instant_import_tasks'].to_i
+    import_versions = @settings['import']['sync_versions'] == '1'
     tasks = params[:import][:tasks].select { |index, task_info| task_info[:import] == '1' }
     update_existing = params[:update_existing]
 
@@ -83,29 +81,29 @@ class LoaderController < ApplicationController
       issues_info = tasks_to_import.map { |issue| {title: issue.subject, uid: issue.uid, outlinenumber: issue.outlinenumber, predecessors: issue.predecessors} }
 
       if tasks_to_import.size <= tasks_per_time
-        uid_to_issue_id, outlinenumber_to_issue_id = Import.import_tasks(tasks_to_import, @project.id, user, nil, update_existing, import_versions)
-        Import.map_subtasks_and_parents(issues_info, @project.id, nil, uid_to_issue_id, outlinenumber_to_issue_id)
-        Import.map_versions_and_relations(milestones, issues, @project.id, nil, import_versions, uid_to_issue_id)
+        uid_to_issue_id, outlinenumber_to_issue_id = Importxml.import_tasks(tasks_to_import, @project.id, user, nil, update_existing, import_versions)
+        Importxml.map_subtasks_and_parents(issues_info, @project.id, nil, uid_to_issue_id, outlinenumber_to_issue_id)
+        Importxml.map_versions_and_relations(milestones, issues, @project.id, nil, import_versions, uid_to_issue_id)
 
         flash[:notice] = l(:imported_successfully) + issues.count.to_s
         redirect_to project_issues_path(@project)
         return
       else
         tasks_to_import.each_slice(tasks_per_time).each do |batch|
-          Import.delay(queue: import_name, priority: 1).import_tasks(batch, @project.id, user, import_name, update_existing, import_versions)
+          Importxml.delay(queue: import_name, priority: 1).import_tasks(batch, @project.id, user, import_name, update_existing, import_versions)
         end
 
         issues_info.each_slice(50).each do |batch|
-          Import.delay(queue: import_name, priority: 3).map_subtasks_and_parents(batch, @project.id, import_name)
+          Importxml.delay(queue: import_name, priority: 3).map_subtasks_and_parents(batch, @project.id, import_name)
         end
 
         issues.each_slice(tasks_per_time).each do |batch|
-          Import.delay(queue: import_name, priority: 4).map_versions_and_relations(milestones, batch, @project.id, import_name, import_versions)
+          Importxml.delay(queue: import_name, priority: 4).map_versions_and_relations(milestones, batch, @project.id, import_name, import_versions)
         end
 
         Mailer.delay(queue: import_name, priority: 5).notify_about_import(user, @project, date, issues_info) # send notification that import finished
 
-        Import.delay(queue: import_name, priority: 10).clean_up(import_name)
+        Importxml.delay(queue: import_name, priority: 10).clean_up(import_name)
 
         flash[:notice] = t(:your_tasks_being_imported)
       end
@@ -141,16 +139,16 @@ class LoaderController < ApplicationController
   end
 
   def get_import_settings
-    @is_private_by_default = @settings[:import][:is_private_by_default] == '1'
-    get_ignore_fields(:import)
+    @is_private_by_default = @settings['import'].blank? ? false : @settings['import']['is_private_by_default'] == '1'
+    get_ignore_fields('import')
   end
 
   def get_export_settings
-    @export_versions = @settings[:export][:sync_versions] == '1'
-    get_ignore_fields(:export)
+    @export_versions = @settings['export'].blank? ? false : @settings['export']['sync_versions'] == '1'
+    get_ignore_fields('export')
   end
 
   def get_ignore_fields(way)
-    @ignore_fields = { way.to_sym => @settings[way.to_sym][:ignore_fields].select { |attr, val| val == '1' }.keys }
+    @ignore_fields = { way => @settings[way]['ignore_fields'].select { |attr, val| val == '1' }.keys }
   end
 end

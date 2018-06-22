@@ -1,4 +1,4 @@
-module Concerns::Import
+module Concerns::Importxml
   extend ActiveSupport::Concern
 
   def build_tasks_to_import(raw_tasks)
@@ -7,7 +7,7 @@ module Concerns::Import
       struct = ImportTask.new
       fields = %w(tid subject status_id level outlinenumber code estimated_hours start_date due_date priority done_ratio predecessors delays assigned_to parent_id description milestone tracker_id is_private uid spent_hours)
 
-      (fields - @ignore_fields[:import]).each do |field|
+      (fields - @ignore_fields['import']).each do |field|
         eval("struct.#{field} = task[:#{field}]#{".try(:split, ', ')" if field.in?(%w(predecessors delays))}")
       end
       struct.status_id ||= IssueStatus.default
@@ -26,10 +26,10 @@ module Concerns::Import
 
     logger.debug "DEBUG: BEGIN get_tasks_from_xml"
 
-    tracker_field = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[Alias='#{@settings[:tracker_alias]}']/FieldID").try(:text).try(:to_i)
-    issue_rid = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[Alias='#{@settings[:redmine_id_alias]}']/FieldID").try(:text).try(:to_i)
-    redmine_task_status = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[Alias='#{@settings[:redmine_status_alias]}']/FieldID").try(:text).try(:to_i)
-    default_issue_status_id = IssueStatus.default.id
+    tracker_field = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[FieldName='Text16']/FieldID").try(:text).try(:to_i)
+    issue_rid = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[FieldName='Text15']/FieldID").try(:text).try(:to_i)
+    redmine_task_status = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[FieldName='Text14']/FieldID").try(:text).try(:to_i)
+    default_issue_status_id = IssueStatus.first.id
 
     doc.xpath('Project/Tasks/Task').each do |task|
       begin
@@ -77,7 +77,7 @@ module Concerns::Import
     resource_by_user = get_bind_resource_users(doc)
     doc.xpath('Project/Assignments/Assignment').each do |as|
       resource_id = as.at('ResourceUID').text.to_i
-      next if resource_id == Import::NOT_USER_ASSIGNED
+      next if resource_id == Importxml::NOT_USER_ASSIGNED
       task_uid = as.at('TaskUID').text.to_i
       assigned_task = tasks.detect { |task| task.uid == task_uid }
       next unless assigned_task

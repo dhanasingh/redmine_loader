@@ -38,7 +38,7 @@ module Concerns::Importxml
         struct.uid = task.value_at('UID', :to_i)
         next if struct.uid == 0
         struct.milestone = task.value_at('Milestone', :to_i)
-        next unless struct.milestone.try(:zero?)
+        #next unless struct.milestone.try(:zero?)
         status_name = task.xpath("ExtendedAttribute[FieldID='#{redmine_task_status}']/Value").try(:text)
         struct.status_id = status_name.present? ? IssueStatus.find_by_name(status_name).id : default_issue_status_id
         struct.level = task.value_at('OutlineLevel', :to_i)
@@ -50,7 +50,7 @@ module Concerns::Importxml
         struct.priority = task.at('Priority').try(:text)
         struct.tracker_name = task.xpath("ExtendedAttribute[FieldID='#{tracker_field}']/Value").try(:text)
         struct.tid = task.xpath("ExtendedAttribute[FieldID='#{issue_rid}']/Value").try(:text).try(:to_i)
-        struct.estimated_hours = task.at('Duration').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') } if struct.milestone.try(:zero?)
+        struct.estimated_hours = task.at('Duration').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') } #if struct.milestone.try(:zero?)
         struct.done_ratio = task.value_at('PercentComplete', :to_i)
         struct.description = task.value_at('Notes', :strip)
         struct.predecessors = task.xpath('PredecessorLink').map { |predecessor| predecessor.value_at('PredecessorUID', :to_i) }

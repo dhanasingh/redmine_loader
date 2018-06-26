@@ -22,7 +22,7 @@ class Importxml
 
     Issue.transaction do
       to_import.each do |source_issue|
-        unless source_issue.milestone.to_i == 1
+        unless source_issue.milestone.to_i == 1 && sync_versions
           issue = update_existing ? Issue.where("id = ? AND project_id = ?", source_issue.tid, project_id).first_or_initialize : Issue.new
           issue.tracker_id = source_issue.tracker_id
           issue.subject = source_issue.subject.slice(0, 246) + (issue.new_record? ? '_imported' : '') # Max length of this field is 255
@@ -59,10 +59,10 @@ class Importxml
         else
           if sync_versions
             # If the issue is a milestone we save it as a Redmine Version
-            version_record = Version.where("name = ? AND project_id = ?", source_issue.title, project_id).first_or_initialize
-            version_record.name = source_issue.title.slice(0, 59) # maximum is 60 characters
+            version_record = Version.where("name = ? AND project_id = ?", source_issue.subject, project_id).first_or_initialize
+            version_record.name = source_issue.subject.slice(0, 59) # maximum is 60 characters
             version_record.description = source_issue.try(:notes)
-            version_record.effective_date = source_issue.start
+            version_record.effective_date = source_issue.start_date
             version_record.project_id = project_id
             version_record.save
             # Store the version_record.id to assign the issues to the version later

@@ -36,7 +36,6 @@ class LoaderController < ApplicationController
           xmldoc = Nokogiri::XML::Document.parse(readxml).remove_namespaces!
           @import.tasks = get_tasks_from_xml(xmldoc)
         end
-
         subjects = @import.tasks.map(&:subject)
         @duplicates = subjects.select{ |subj| subjects.count(subj) > 1 }.uniq
 
@@ -78,13 +77,13 @@ class LoaderController < ApplicationController
     # Right, good to go! Do the import.
     begin
       milestones = tasks_to_import.select { |task| task.milestone == '1' }
-      issues = tasks_to_import - milestones
+      issues = import_versions ? tasks_to_import - milestones : tasks_to_import
       issues_info = tasks_to_import.map { |issue| {title: issue.subject, uid: issue.uid, outlinenumber: issue.outlinenumber, predecessors: issue.predecessors} }
 
       if tasks_to_import.size <= tasks_per_time
-        uid_to_issue_id, outlinenumber_to_issue_id = Importxml.import_tasks(tasks_to_import, @project.id, user, nil, update_existing, import_versions)
+        uid_to_issue_id, outlinenumber_to_issue_id, uid_to_version_id = Importxml.import_tasks(tasks_to_import, @project.id, user, nil, update_existing, import_versions)
         Importxml.map_subtasks_and_parents(issues_info, @project.id, nil, uid_to_issue_id, outlinenumber_to_issue_id)
-        Importxml.map_versions_and_relations(milestones, issues, @project.id, nil, import_versions, uid_to_issue_id)
+        Importxml.map_versions_and_relations(milestones, issues, @project.id, nil, import_versions, uid_to_issue_id, uid_to_version_id)
 
         flash[:notice] = l(:imported_successfully) + issues.count.to_s
         redirect_to project_issues_path(@project)

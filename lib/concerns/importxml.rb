@@ -51,7 +51,7 @@ module Concerns::Importxml
         struct.tracker_name = task.xpath("ExtendedAttribute[FieldID='#{tracker_field}']/Value").try(:text)
         struct.tid = task.xpath("ExtendedAttribute[FieldID='#{issue_rid}']/Value").try(:text).try(:to_i)
         struct.estimated_hours = task.at('Duration').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') } #if struct.milestone.try(:zero?)
-        struct.done_ratio = task.value_at('PercentComplete', :to_i)
+        struct.done_ratio = get_percent_complete(task).round(-1)
         struct.description = task.value_at('Notes', :strip)
         struct.predecessors = task.xpath('PredecessorLink').map { |predecessor| predecessor.value_at('PredecessorUID', :to_i) }
         struct.delays = task.xpath('PredecessorLink').map { |predecessor| predecessor.value_at('LinkLag', :to_i) }
@@ -82,7 +82,29 @@ module Concerns::Importxml
       assigned_task = tasks.detect { |task| task.uid == task_uid }
       next unless assigned_task
       assigned_task.assigned_to = resource_by_user[resource_id]
+	  if assigned_task.work.blank?
+		 assigned_task.work = as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
+	  else	
+		work = as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') } 
+		assigned_task.work = get_scorm_time((assigned_task.work.to_hours) + (work.to_hours))
+	  end
     end
+  end
+  
+  def get_scorm_time time
+    return 'PT8H0M0S' if time.nil? || time.zero?
+    time = time.to_s.split('.')
+    hours = time.first.to_i
+    minutes = time.last.to_i == 0 ? 0 : (60 * "0.#{time.last}".to_f).to_i
+    return "PT#{hours}H#{minutes}M0S"
+  end
+  
+  def get_percent_complete(task)  
+	duration  = task.at('Duration').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
+	remainingDuration = task.at('RemainingDuration').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
+	percentComplete = (((duration.to_hours - remainingDuration.to_hours) / duration.to_hours) * 100)
+	percentComplete.to_i
+	percentComplete.to_i
   end
 
   def get_bind_resource_users(doc)

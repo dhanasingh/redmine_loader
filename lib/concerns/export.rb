@@ -127,7 +127,7 @@ module Concerns::Export
             xml.Assignment {
               unless ignore_field?('estimated_hours', 'export') && !issue.leaf?
                 time = get_scorm_time(issue.estimated_hours)
-                xml.Duration time
+                xml.Work time
                 xml.RegularWork time
                 xml.RemainingWork time
               end
@@ -224,8 +224,8 @@ module Concerns::Export
       xml.LateStart start_date.to_time.to_s(:ms_xml)
       xml.LateFinish finish_date.to_time.to_s(:ms_xml)
       time = get_scorm_time(struct.estimated_hours)
+      xml.Work time
       xml.Duration time
-      #xml.Duration time
       #xml.ManualDuration time
       #xml.RemainingDuration time
       #xml.RemainingWork time

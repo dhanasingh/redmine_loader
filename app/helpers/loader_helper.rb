@@ -13,7 +13,7 @@ module LoaderHelper
   end
 
   def loader_percent_select_tag(task_percent, index)
-    select_tag "import[tasks][#{index}][percentcomplete]", options_for_select((0..10).to_a.map {|p| (p*10)}, task_percent.to_i)
+    select_tag "import[tasks][#{index}][done_ratio]", options_for_select((0..10).to_a.map {|p| (p*10)}, task_percent)
   end
 
   def loader_priority_select_tag(task_priority, index)

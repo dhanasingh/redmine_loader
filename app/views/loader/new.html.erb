@@ -1,9 +1,13 @@
 <%= stylesheet_link_tag 'loader', plugin: 'redmine_loader' %>
+<%= javascript_include_tag 'attachments'%>
 <div class='left half'>
   <h1><%= l(:import_tasks) %></h1>
   <%= form_for(:import, url: analyze_project_loader_path, html: {id: 'import', multipart: true}) do |f| %>
     <%= render partial: 'about' %>
-    <%= f.file_field 'xmlfile', accept: 'application/xml,application/gzip' %>
+    <%#= f.file_field 'xmlfile', accept: 'application/xml,application/gzip' %>
+	<div>
+		<%= render :partial => 'attachments/form', :locals => {:multiple => false} %>
+	</div>
     <tr>
       <%= f.submit(l(:analyze), {name: 'import[analyze]', disable_with: l(:analyzing)}) %>
     </tr>

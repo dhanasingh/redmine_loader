@@ -24,30 +24,49 @@ class LoaderController < ApplicationController
 
   def analyze
     begin
-      xmlfile = params[:import][:xmlfile].try(:tempfile)
-      if xmlfile
+	  @attachedFile =  saveAttachments(params[:attachments])
+	  
+      xmlfile = @attachedFile.diskfile #params[:import][:xmlfile].try(:tempfile)
+      if !xmlfile.blank? && valid_extension?(@attachedFile.filename)
         @import = Importxml.new
-        byte = xmlfile.getc
-        xmlfile.rewind
+        #byte = xmlfile.getc
+        #xmlfile.rewind
 
-        xmlfile = Zlib::GzipReader.new xmlfile unless byte == '<'[0]
-        File.open(xmlfile, 'r') do |readxml|
+        #xmlfile = Zlib::GzipReader.new xmlfile unless byte == '<'[0]
+        File.open(@attachedFile.diskfile, 'r') do |readxml|
           @import.hashed_name = (File.basename(xmlfile, File.extname(xmlfile)) + Time.now.to_s).hash.abs
           xmldoc = Nokogiri::XML::Document.parse(readxml).remove_namespaces!
           @import.tasks = get_tasks_from_xml(xmldoc)
         end
         subjects = @import.tasks.map(&:subject)
-        @duplicates = subjects.select{ |subj| subjects.count(subj) > 1 }.uniq
-
+        @duplicates = Array.new #subjects.select{ |subj| subjects.count(subj) > 1 }.uniq
+		@project.save
         flash[:notice] = l(:tasks_read_successfully)
       else
+		destroyAttachements(@attachedFile.id)
         flash[:error] = l(:choose_file_warning)
       end
     rescue => error
+	  destroyAttachements(@attachedFile.id)
       lines = error.message.split("\n")
       flash[:error] = l(:failed_read) + lines.to_s
     end
     redirect_to new_project_loader_path if flash[:error]
+  end
+  
+  def saveAttachments(attachments)
+	attachment = nil
+	params[:attachments].each do |attachment_param|
+		attachment = Attachment.find_by_token(attachment_param[1][:token])
+		unless attachment.blank?
+			attachment.container_type = @project.class.name
+			attachment.container_id = @project.id
+			attachment.filename = Time.now.to_s + attachment.filename
+			attachment.description = attachment_param[1][:description]
+			attachment.save
+		end
+	end
+	attachment
   end
 
   def create
@@ -70,6 +89,7 @@ class LoaderController < ApplicationController
     import_name = params[:hashed_name]
 
     if flash[:error]
+	  destroyAttachements(params[:attachment_id])
       redirect_to new_project_loader_path # interrupt if any errors
       return
     end
@@ -108,6 +128,7 @@ class LoaderController < ApplicationController
         flash[:notice] = t(:your_tasks_being_imported)
       end
     rescue => error
+	  destroyAttachements(params[:attachment_id])
       flash[:error] = l(:unable_import) + error.to_s
       logger.debug "DEBUG: Unable to import tasks: #{ error }"
     end
@@ -118,6 +139,15 @@ class LoaderController < ApplicationController
   def export
     xml, name = generate_xml
     send_data xml, filename: name, disposition: :attachment
+  end
+  
+  def destroyAttachements(attachementId)
+	attachmentObj = Attachment.find(attachementId.to_i).destroy unless attachementId.blank?	
+  end
+  
+  def valid_extension?(filename)
+    ext = File.extname(filename)
+    %w( .xml ).include? ext.downcase
   end
 
   private

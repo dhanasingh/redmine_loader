@@ -43,3 +43,27 @@
     <%= loader_setting_checkbox('export', 'ignore_fields', 'done_ratio') %>
   <% end %>
 <% end %>
+<%
+	loader_helper = Object.new.extend(LoaderHelper)
+	project_custom_fields = ProjectCustomField.order('name')
+	cfProjRevision = loader_helper.getCfListArr(project_custom_fields, 'string', true)
+	
+	issue_custom_fields = IssueCustomField.order('name')
+	cfIssueCompletionDate = loader_helper.getCfListArr(issue_custom_fields, 'date', false)
+	cfIssueClientEstimation = loader_helper.getCfListArr(issue_custom_fields, 'float', false)
+%>
+<%= content_tag :fieldset, class: 'box' do %>
+  <%= content_tag :legend, t('.custom_mapping') %>
+  <p style="padding-left: 190px;">
+		<label><%= l(:label_project_revision) %> </label>
+		<%=h select_tag('settings[loader_project_cf]', options_for_select(cfProjRevision, :selected =>  @settings['loader_project_cf'])) %>
+  </p>
+  <p style="padding-left: 190px;">
+		<label><%= l(:label_client_estimation) %> </label>
+		<%=h select_tag('settings[loader_client_estimation]', options_for_select(cfIssueClientEstimation, :selected =>  @settings['loader_client_estimation'])) %>
+  </p>
+  <p style="padding-left: 190px;">
+		<label><%= l(:label_completion_date) %> </label>
+		<%=h select_tag('settings[loader_completion_date]', options_for_select(cfIssueCompletionDate, :selected =>  @settings['loader_completion_date'])) %>
+  </p>
+<% end %>

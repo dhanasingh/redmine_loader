@@ -37,6 +37,9 @@ de:
   can_find_html: Sie finden die Aufgaben hier %{link}
   here: hier
   duplicates_warning: 'Die Aufgaben mit den UIDs %{ids} konnten nicht verarbeitet werden. Bitte prüfen Sie das.'
+  label_project_revision: Project Revision
+  label_client_estimation: Client Estimation
+  label_completion_date: Completion Date
   settings:
     loader_settings:
       tracker_alias: Alias für das Tracker Feld
@@ -47,3 +50,4 @@ de:
       export_settings: Exporteinstellungen
       import_settings: Importeinstellungen
       ignore_fields: Ignoriere diese Felder
+      custom_mapping: Custom Field Mapping

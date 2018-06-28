@@ -43,4 +43,19 @@ module LoaderHelper
   def map_priority
 	@map_priority ||= Hash[IssuePriority.active.map { |priority| [priority.name, priority.id] }]
   end
+  
+  def getCfListArr(customFields, cfType, needBlank)
+	unless customFields.blank?
+		cfs = customFields.select {|cf| cf.field_format == cfType }
+		unless cfs.blank?
+			cfArray = cfs.collect {|cf| [cf.name, cf.id] }
+		else
+			cfArray = Array.new
+		end
+	else
+		cfArray = Array.new
+	end
+	cfArray.unshift(["",0]) if needBlank
+	cfArray
+  end
 end

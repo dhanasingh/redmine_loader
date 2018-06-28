@@ -37,6 +37,9 @@ en:
   can_find_html: You can find it %{link}
   here: here
   duplicates_warning: 'Tasks with UIDs: %{ids} cannot be processed. Please, check it.'
+  label_project_revision: Project Revision
+  label_client_estimation: Client Estimation
+  label_completion_date: Completion Date
   settings:
     loader_settings:
       tracker_alias: Alias for Tracker field
@@ -47,3 +50,6 @@ en:
       export_settings: Export settings
       import_settings: Import settings
       ignore_fields: Ignore fields
+      custom_mapping: Custom Field Mapping
+      
+ 

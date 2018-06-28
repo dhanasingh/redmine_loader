@@ -37,6 +37,9 @@ ru:
   can_find_html: Вы можете просмотреть все задачи перейдя по %{link}
   here: ссылке
   duplicates_warning: 'Задачи со следующими UID не были распознаны: %{ids}. Пожалуйста, проверьте правильность заполнения данных задач.'
+  label_project_revision: Project Revision
+  label_client_estimation: Client Estimation
+  label_completion_date: Completion Date
   settings:
     loader_settings:
       tracker_alias: Название поля "Трекер"
@@ -47,3 +50,4 @@ ru:
       export_settings: Настройки экспорта
       import_settings: Настройки импорта
       ignore_fields: Пропускать поля
+      custom_mapping: Custom Field Mapping

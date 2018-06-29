@@ -5,7 +5,7 @@ module Concerns::Importxml
     tasks_to_import = []
     raw_tasks.each do |index, task|
       struct = ImportTask.new
-      fields = %w(tid subject status_id level outlinenumber code estimated_hours start_date due_date priority done_ratio predecessors delays assigned_to parent_id description milestone tracker_id is_private uid spent_hours)
+      fields = %w(tid subject status_id level outlinenumber code estimated_hours start_date due_date priority done_ratio predecessors delays assigned_to parent_id description milestone tracker_id is_private uid spent_hours completion_date client_estimation)
 
       (fields - @ignore_fields['import']).each do |field|
         eval("struct.#{field} = task[:#{field}]#{".try(:split, ', ')" if field.in?(%w(predecessors delays))}")
@@ -29,6 +29,9 @@ module Concerns::Importxml
     tracker_field = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[FieldName='Text16']/FieldID").try(:text).try(:to_i)
     issue_rid = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[FieldName='Text15']/FieldID").try(:text).try(:to_i)
     redmine_task_status = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[FieldName='Text14']/FieldID").try(:text).try(:to_i)
+	clientEstimateField = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[FieldName='Text17']/FieldID").try(:text).try(:to_i)
+	completionDateField = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[FieldName='Date5']/FieldID").try(:text).try(:to_i)
+	
     default_issue_status_id = IssueStatus.first.id
 
     doc.xpath('Project/Tasks/Task').each do |task|
@@ -55,7 +58,10 @@ module Concerns::Importxml
         struct.description = task.value_at('Notes', :strip)
         struct.predecessors = task.xpath('PredecessorLink').map { |predecessor| predecessor.value_at('PredecessorUID', :to_i) }
         struct.delays = task.xpath('PredecessorLink').map { |predecessor| predecessor.value_at('LinkLag', :to_i) }
-
+		struct.client_estimation = task.xpath("ExtendedAttribute[FieldID='#{clientEstimateField}']/Value").try(:text)
+		unless task.xpath("ExtendedAttribute[FieldID='#{completionDateField}']/Value").try(:text).blank?
+			struct.completion_date = task.xpath("ExtendedAttribute[FieldID='#{completionDateField}']/Value").try(:text).try(:split, "T").try(:fetch, 0)
+		end
         tasks.push(struct)
 
       rescue => error
@@ -86,7 +92,7 @@ module Concerns::Importxml
 		 assigned_task.work = as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
 	  else	
 		work = as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') } 
-		assigned_task.work = get_scorm_time((assigned_task.work.to_hours) + (work.to_hours))
+		assigned_task.work = get_scorm_time((assigned_task.work.try(:to_hours)).to_f + (work.try(:to_hours)).to_f)
 	  end
     end
   end
@@ -102,8 +108,7 @@ module Concerns::Importxml
   def get_percent_complete(task)  
 	duration  = task.at('Duration').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
 	remainingDuration = task.at('RemainingDuration').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
-	percentComplete = (((duration.to_hours - remainingDuration.to_hours) / duration.to_hours) * 100)
-	percentComplete.to_i
+	percentComplete = (((duration.try(:to_hours).to_f - remainingDuration.try(:to_hours).to_f) / duration.try(:to_hours).to_f) * 100)
 	percentComplete.to_i
   end
 

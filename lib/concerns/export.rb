@@ -33,6 +33,14 @@ module Concerns::Export
             xml.FieldName 'Text16'
             xml.Alias @settings['tracker_alias']
           }
+          xml.ExtendedAttribute {
+            xml.FieldID 188744003
+            xml.FieldName 'Text17'
+          }
+          xml.ExtendedAttribute {
+            xml.FieldID 188743949
+            xml.FieldName 'Date5'
+          }
         }
         xml.Calendars {
           xml.Calendar {
@@ -210,11 +218,12 @@ module Concerns::Export
       start_date = struct.issue.next_working_date(struct.start_date || struct.created_on.to_date)
       xml.Start start_date.to_time.to_s(:ms_xml)
       finish_date = if struct.due_date
-                      if struct.issue.next_working_date(struct.due_date).day == start_date.day
-                        start_date.next
-                      else
-                        struct.issue.next_working_date(struct.due_date)
-                      end
+                      # if struct.issue.next_working_date(struct.due_date).day == start_date.day
+                        # start_date.next
+                      # else
+                        # struct.issue.next_working_date(struct.due_date)
+                      # end
+					  struct.issue.next_working_date(struct.due_date)
                     else
                       start_date.next
                     end
@@ -250,7 +259,7 @@ module Concerns::Export
         }
       end
       if struct.relations_to_ids.any?
-        struct.relations.select { |ir| ir.relation_type == 'precedes' }.each do |relation|
+        struct.relations.select { |ir| (ir.relation_type == 'precedes' && ir.issue_to_id == struct.id) || (ir.relation_type == 'follows' && ir.issue_from_id == struct.id) }.each do |relation|
           xml.PredecessorLink {
             xml.PredecessorUID @task_id_to_uid[relation.issue_from_id]
             if struct.project_id == relation.issue_from.project_id
@@ -259,8 +268,9 @@ module Concerns::Export
               xml.CrossProject 1
               xml.CrossProjectName relation.issue_from.project.name
             end
-            xml.LinkLag (relation.delay * 4800)
-            xml.LagFormat 7
+			xml.Type 1
+            #xml.LinkLag (relation.delay * 4800)
+            #xml.LagFormat 7
           }
         end
       end
@@ -275,6 +285,14 @@ module Concerns::Export
       xml.ExtendedAttribute {
         xml.FieldID 188744002
         xml.Value struct.tracker.name
+      }
+      xml.ExtendedAttribute {
+        xml.FieldID 188744003
+        xml.Value struct.custom_field_value(@settings['loader_client_estimation'])
+      }
+      xml.ExtendedAttribute {
+        xml.FieldID 188743949
+        xml.Value struct.custom_field_value(@settings['loader_completion_date']).try(:to_time).try(:to_s, :ms_xml)
       }
       xml.WBS(struct.outlinenumber)
       xml.OutlineNumber struct.outlinenumber

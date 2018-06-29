@@ -19,6 +19,7 @@ class Importxml
     uid_to_version_id = {}
     # keep track of the outlineNumbers to set the parent_id
     outlinenumber_to_issue_id = {}
+	settings ||= Setting.plugin_redmine_loader
 
     Issue.transaction do
       to_import.each do |source_issue|
@@ -38,6 +39,7 @@ class Importxml
           end
 
           issue.assigned_to_id = source_issue.assigned_to
+		  issue.custom_field_values = {settings['loader_client_estimation'].to_i => source_issue.client_estimation, settings['loader_completion_date'].to_i => source_issue.completion_date}
           if issue.save!
             puts "DEBUG: Issue #{issue.subject} imported"
 
@@ -158,6 +160,9 @@ class Importxml
               relation.issue_from_id = uid_to_issue_id[parent_uid]
               relation.issue_to_id = uid_to_issue_id[source_issue.uid]
               relation.relation_type = 'precedes'
+			  if source_issue.start_date == Issue.find(uid_to_issue_id[parent_uid]).try(:start_date)
+				relation.delay = -1
+			  end
               # Set the delay of the relation if it exists.
               #if source_issue.try { |e| e.delays[delaynumber].to_i > 0 }
               #  i.delay = (source_issue.delays[delaynumber].to_i)/4800

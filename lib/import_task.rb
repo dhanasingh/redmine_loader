@@ -1,4 +1,6 @@
 class ImportTask < Struct.new(:assigned_to,
+						:completion_date,
+						:client_estimation,
                         :work,
                         :code,
                         :delays,

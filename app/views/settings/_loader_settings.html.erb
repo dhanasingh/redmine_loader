@@ -46,7 +46,7 @@
 <%
 	loader_helper = Object.new.extend(LoaderHelper)
 	project_custom_fields = ProjectCustomField.order('name')
-	cfProjRevision = loader_helper.getCfListArr(project_custom_fields, 'string', true)
+	cfProjRevision = loader_helper.getCfListArr(project_custom_fields, 'string', false)
 	
 	issue_custom_fields = IssueCustomField.order('name')
 	cfIssueCompletionDate = loader_helper.getCfListArr(issue_custom_fields, 'date', false)
@@ -54,6 +54,7 @@
 %>
 <%= content_tag :fieldset, class: 'box' do %>
   <%= content_tag :legend, t('.custom_mapping') %>
+  <%= loader_setting_checkbox('import', 'ignore_fields', 'attach_imported_files') %>
   <p style="padding-left: 190px;">
 		<label><%= l(:label_project_revision) %> </label>
 		<%=h select_tag('settings[loader_project_cf]', options_for_select(cfProjRevision, :selected =>  @settings['loader_project_cf'])) %>

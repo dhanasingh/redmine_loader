@@ -10,11 +10,13 @@ module Concerns::Export
     @task_id_to_uid = {}
     @version_id_to_uid = {}
     @calendar_id_to_uid = {}
-
+	
+	
     export = Nokogiri::XML::Builder.new(encoding: 'UTF-8') do |xml|
       resources = @project.assignable_users
       xml.Project('xmlns' => 'http://schemas.microsoft.com/project') {
-        xml.Title @project.name
+        xml.Title @project.name + addRevision
+		xml.Name @project.name + addRevision
         xml.ExtendedAttributes {
           xml.ExtendedAttribute {
             xml.FieldID 188744000
@@ -309,5 +311,11 @@ module Concerns::Export
       xml.OutlineNumber @uid
       xml.OutlineLevel 1
     }
+  end
+  
+  def addRevision
+	revisionValue = "-r-"
+	revisionValue += @project.custom_value_for(@settings['loader_project_cf']).value unless @settings['loader_project_cf'].blank?
+	revisionValue
   end
 end

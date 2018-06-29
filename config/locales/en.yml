@@ -40,6 +40,10 @@ en:
   label_project_revision: Project Revision
   label_client_estimation: Client Estimation
   label_completion_date: Completion Date
+  label_revision_error: Revision mismatch Please export the appopriate revision file then import the file.
+  label_file_extension: Please choose the xml file
+  label_revision_configure: Please configure the revision custom field mapping
+  field_attach_imported_files: Attach imported files
   settings:
     loader_settings:
       tracker_alias: Alias for Tracker field

@@ -1,4 +1,4 @@
-class LoaderController < ApplicationController
+class LoaderController < ApplicationController 
 
   unloadable
 
@@ -9,8 +9,10 @@ class LoaderController < ApplicationController
 
   include Concerns::Importxml
   include Concerns::Export
+  include Concerns::Importxml
   include QueriesHelper
   include SortHelper
+  
 
   require 'zlib'
   require 'tempfile'
@@ -27,7 +29,7 @@ class LoaderController < ApplicationController
 	  @attachedFile =  saveAttachments(params[:attachments])
 	  
       xmlfile = @attachedFile.diskfile #params[:import][:xmlfile].try(:tempfile)
-      if !xmlfile.blank? && valid_extension?(@attachedFile.filename)
+      if !xmlfile.blank? && valid_extension?(@attachedFile.filename) &&  @settings['loader_project_cf'].to_i != 0 
         @import = Importxml.new
         #byte = xmlfile.getc
         #xmlfile.rewind
@@ -36,6 +38,10 @@ class LoaderController < ApplicationController
         File.open(@attachedFile.diskfile, 'r') do |readxml|
           @import.hashed_name = (File.basename(xmlfile, File.extname(xmlfile)) + Time.now.to_s).hash.abs
           xmldoc = Nokogiri::XML::Document.parse(readxml).remove_namespaces!
+		  validRevision = validateRevision(xmldoc)
+		  unless validRevision
+			raise l(:label_revision_error)
+		  end
           @import.tasks = get_tasks_from_xml(xmldoc)
         end
         subjects = @import.tasks.map(&:subject)
@@ -43,8 +49,15 @@ class LoaderController < ApplicationController
 		@project.save
         flash[:notice] = l(:tasks_read_successfully)
       else
+	    if !valid_extension?(@attachedFile.filename)
+			msg = l(:label_file_extension)
+		elsif @settings['loader_project_cf'].to_i == 0
+			msg = l(:label_revision_configure)
+		else 
+			msg = l(:choose_file_warning)
+		end
 		destroyAttachements(@attachedFile.id)
-        flash[:error] = l(:choose_file_warning)
+        flash[:error] = msg
       end
     rescue => error
 	  destroyAttachements(@attachedFile.id)
@@ -105,6 +118,7 @@ class LoaderController < ApplicationController
         Importxml.map_subtasks_and_parents(issues_info, @project.id, nil, uid_to_issue_id, outlinenumber_to_issue_id)
         Importxml.map_versions_and_relations(milestones, issues, @project.id, nil, import_versions, uid_to_issue_id, uid_to_version_id)
 
+		saveRevision
         flash[:notice] = l(:imported_successfully) + issues.count.to_s
         redirect_to project_issues_path(@project)
         return
@@ -124,7 +138,7 @@ class LoaderController < ApplicationController
         Mailer.delay(queue: import_name, priority: 5).notify_about_import(user, @project, date, issues_info) # send notification that import finished
 
         Importxml.delay(queue: import_name, priority: 10).clean_up(import_name)
-
+		saveRevision
         flash[:notice] = t(:your_tasks_being_imported)
       end
     rescue => error
@@ -180,5 +194,30 @@ class LoaderController < ApplicationController
 
   def get_ignore_fields(way)
     @ignore_fields = { way => @settings[way]['ignore_fields'].select { |attr, val| val == '1' }.keys }
+  end
+  
+  def validateRevision(xmldoc)
+	isValidateRevision = false
+	begin
+		projectName = xmldoc.xpath('Project').at('Name').text.strip
+		projectNameArray = projectName.split('-')
+		revisionValue = @project.custom_field_value(@settings['loader_project_cf'])	
+		nameArray = projectNameArray.last(2)
+		if revisionValue.blank? && nameArray[0] != 'r'		
+			isValidateRevision = true
+		elsif  nameArray[0] == 'r' && (revisionValue.to_f == nameArray[1].to_f)
+			isValidateRevision = true
+		end	
+	rescue Exception => e
+		raise e.message 
+	end
+	isValidateRevision
+  end
+  
+  def saveRevision
+	revisionValue = @project.custom_field_value(@settings['loader_project_cf'])
+	newRevisionValue = revisionValue.blank? ? 1 : (revisionValue.to_i + 1)
+	@project.custom_field_values = {@settings['loader_project_cf'].to_s => newRevisionValue.to_s}
+	@project.save
   end
 end

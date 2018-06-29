@@ -7,7 +7,11 @@
   <% if @import.tasks.any? %>
     <p><%= l(:about_analyzed) %></p>
     <%= content_tag :p, l(:warning_text).html_safe,  class: 'dup', align: "center", colspan: 5 if @duplicates.any? %>
-    <table border="0" cellspacing="0" cellpadding="2" align="center" class="bulk_task_import">
+	<% @Projecttrackers = @project.trackers.sorted.to_a %>
+	<p><%= l(:label_change_all_tracker) %>
+	<%=  select_tag('load_tracker_id', options_for_select(@Projecttrackers), :onchange => "modifyTracker('tbl_task_import')" )%>
+	</p>
+    <table border="0" cellspacing="0" cellpadding="2" align="center" class="bulk_task_import" id="tbl_task_import">
       <tr valign="middle" align="center" class="info">
         <th><%= link_to_function(l(:import), 'toggleCheckboxesSelection(this);', class: 'import') %>
         <th>UID</th>

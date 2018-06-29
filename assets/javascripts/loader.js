@@ -26,3 +26,32 @@ function clearDates(el) {
     });
   }
 }
+
+function modifyTracker(tableId)
+{
+	var table = document.getElementById(tableId);
+	var rowlength = table.rows.length;
+	var trackerDD = document.getElementById('load_tracker_id');
+	var setValue = trackerDD.options[trackerDD.selectedIndex].value;
+	for(var i = 0 ; i <= rowlength-2 ; i++)
+	{
+		strId = "import_tasks_"+i+"_tracker_id";
+		objSelect = document.getElementById(strId);
+		if(objSelect != null)
+		{
+			setSelectedValue(objSelect, setValue);
+		}
+		
+	}
+}
+
+function setSelectedValue(selectObj, valueToSet) {
+	
+    for (var i = 0; i < selectObj.options.length; i++) {
+        if (selectObj.options[i].text === valueToSet) {
+            selectObj.options[i].selected = true;
+            return;
+        }
+    }
+}
+

@@ -5,10 +5,8 @@
   <%= form_for(:import, url: analyze_project_loader_path, html: {id: 'import', multipart: true}) do |f| %>
     <%= render partial: 'about' %>
     <%#= f.file_field 'xmlfile', accept: 'application/xml,application/gzip' %>
-	<div>
-		<%= render :partial => 'attachments/form', :locals => {:multiple => false} %>
-	</div>
-    <tr>
+	<%= render :partial => 'attachments/form', :locals => {:multiple => false} %>	
+    <tr>	  
       <%= f.submit(l(:analyze), {name: 'import[analyze]', disable_with: l(:analyzing)}) %>
     </tr>
   <% end %>

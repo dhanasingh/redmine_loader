@@ -26,10 +26,16 @@
       <% end %>
       <tr>
         <td align="right" colspan="8">
-          <%= check_box_tag 'update_existing', "1", true, class: 'update_existing' %>
-          <%= label_tag :update_existing, t(:update_existing), {class: 'update_existing'} %>
+          <%#= check_box_tag 'update_existing', "1", true, class: 'update_existing' %>
+          <%#= label_tag :update_existing, t(:update_existing), {class: 'update_existing'} %>
+		  <% hidden_field_tag 'update_existing', true %>
         </td>
-        <td align="right" colspan="10"><%= f.submit(l(:import_selected), {name: 'import[import_selected]'}) %></td>
+		<% revision = @project.custom_field_value(@settings['loader_project_cf']) 			
+			msg = l(:label_confirmation_msg)
+			msg = l(:label_confirmation_revision_msg, :revision => ("r-" + revision.to_s) ) if !revision.blank? && revision != 0  
+			
+		%>
+        <td align="right" colspan="10"><%= f.submit l(:import_selected), data: { "confirm": msg }, name: 'import[import_selected]', id:'import[import_selected]' %></td>
         <td><%= link_to(l(:back), new_project_loader_path) %></td>
       </tr>
     </table>

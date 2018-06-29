@@ -160,7 +160,9 @@ class Importxml
               relation.issue_from_id = uid_to_issue_id[parent_uid]
               relation.issue_to_id = uid_to_issue_id[source_issue.uid]
               relation.relation_type = 'precedes'
-			  if source_issue.start_date == Issue.find(uid_to_issue_id[parent_uid]).try(:start_date)
+			  parent = Issue.find(uid_to_issue_id[parent_uid])
+			# Redmine does not have the time component, So if Task A completed in the middle of the day then the following task Task B starts at middle of the day So we have add delay -1 here
+			  if source_issue.start_date.to_date == parent.try(:due_date)
 				relation.delay = -1
 			  end
               # Set the delay of the relation if it exists.

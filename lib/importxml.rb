@@ -11,7 +11,7 @@ class Importxml
     FileUtils.rm Dir["./#{import_name}_*"] # remove temp files
   end
 
-  def self.import_tasks(to_import, project_id, user, hashed_name=nil, update_existing=false, sync_versions=false)
+  def self.import_tasks(to_import, project_id, user, hashed_name=nil, update_existing=true, sync_versions=false)
     puts "DEBUG: #{__method__.to_s} started"
     # We're going to keep track of new issue ID's to make dependencies work later
     uid_to_issue_id = {}

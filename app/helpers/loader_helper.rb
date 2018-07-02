@@ -46,7 +46,7 @@ module LoaderHelper
   
   def getCfListArr(customFields, cfType, needBlank)
 	unless customFields.blank?
-		cfs = customFields.select {|cf| cf.field_format == cfType }
+		cfs = customFields.select {|cf| cf.field_format.in? (cfType) }
 		unless cfs.blank?
 			cfArray = cfs.collect {|cf| [cf.name, cf.id] }
 		else
@@ -58,4 +58,85 @@ module LoaderHelper
 	cfArray.unshift(["",0]) if needBlank
 	cfArray
   end
+  
+  def getExtentedAttr(attrType, ingnoreIds=nil, needBlank=true)
+	extendAttrCount = getExtentedAttrCount(attrType)
+	extendAttr = ('1'.. extendAttrCount).to_a.collect { |x| attrType + x }
+	extendAttr.unshift('') if needBlank
+	extendAttr
+  end
+  
+  def getExtentedAttrFieldId(attrType=nil)
+	extendAttrHash = Hash.new
+	case attrType
+	   when 'Text' then
+			extendAttrHash = getTextAttributes
+	   when 'Date' then
+			extendAttrHash = getDateAttributes
+	   when 'Number' then
+			extendAttrHash = getNumberAttributes
+		else
+			extendAttrHash = getNumberAttributes.merge(getTextAttributes.merge(getDateAttributes))
+	   end
+	extendAttrHash
+  end
+  
+  def getTextAttributes
+	textFieldHash =  Hash.new
+	incrementBy = 3
+	initFieldId = 188743731
+	# For the first 6 text fieldIds are increment by 3 after that it increment by 1 in project libre
+	# After 188743750 next field id is 188743997 so we have add the 246
+	for i in 1..30
+		textFieldHash['Text' + i.to_s] = initFieldId
+		incrementBy = 1  if initFieldId == 188743746
+		initFieldId = initFieldId + 246 if initFieldId == 188743750
+		initFieldId = initFieldId + incrementBy
+	end
+	textFieldHash
+  end
+  
+  def getDateAttributes
+	dateAttrHash = Hash.new
+	for i in 1..10
+		dateAttrHash['Date' + i.to_s] = 188743944 + i
+	end
+	dateAttrHash
+  end
+  
+  def getNumberAttributes
+	numAttrHash = Hash.new
+	initFieldId = 188743766	
+	for i in 1..20
+		numAttrHash['Number' + i.to_s] = initFieldId + i
+		# Number fieldIds are not sequential there is jump after 188743771 Number5 so we add that here 
+		initFieldId = initFieldId + 210 if initFieldId + i == 188743771
+	end
+	numAttrHash
+  end
+  
+  def getExtentedAttrCount(attrType)
+	extendAttrCount = case attrType
+               when 'Text' then '30'
+               when 'Date' then '10'
+               when 'Number' then '20'
+               end
+	extendAttrCount
+  end
+  
+	def getMappedAttrCF
+		attrCfHash = Hash.new
+		['text', 'number', 'date'].each do |eaType|
+			exAttrCount = eaType == 'text' ? 4 : 3
+			for i in 1..exAttrCount
+				attrName = eaType + i.to_s
+				exAttrName = @settings['loader_extended_' + attrName]
+				cfId = @settings['loader_cf_' + attrName]
+				unless exAttrName.blank? || (cfId.blank? || cfId.to_i == 0 )
+					attrCfHash[exAttrName] = cfId.to_i
+				end
+			end
+		end
+		attrCfHash
+	end
 end

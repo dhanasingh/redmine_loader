@@ -11,7 +11,7 @@ module Concerns::Export
     @version_id_to_uid = {}
     @calendar_id_to_uid = {}
 	
-	
+	exAttrCfHash = getExtentedAttrFieldId
     export = Nokogiri::XML::Builder.new(encoding: 'UTF-8') do |xml|
       resources = @project.assignable_users
       xml.Project('xmlns' => 'http://schemas.microsoft.com/project') {
@@ -33,14 +33,12 @@ module Concerns::Export
             xml.FieldName 'Text16'
             xml.Alias @settings['tracker_alias']
           }
-          xml.ExtendedAttribute {
-            xml.FieldID 188744003
-            xml.FieldName 'Text17'
-          }
-          xml.ExtendedAttribute {
-            xml.FieldID 188743949
-            xml.FieldName 'Date5'
-          }
+		  getMappedAttrCF.each do |attr, cfId|
+				xml.ExtendedAttribute {
+				xml.FieldID exAttrCfHash[attr]
+				xml.FieldName attr
+			  }
+		  end
         }
         xml.Calendars {
           xml.Calendar {
@@ -203,6 +201,7 @@ module Concerns::Export
   end
 
   def write_task(xml, struct, id)
+	exAttrCfHash = getExtentedAttrFieldId
     @uid += 1
     @task_id_to_uid[struct.id] = @uid
     xml.Task {
@@ -286,14 +285,18 @@ module Concerns::Export
         xml.FieldID 188744002
         xml.Value struct.tracker.name
       }
-      xml.ExtendedAttribute {
-        xml.FieldID 188744003
-        xml.Value struct.custom_field_value(@settings['loader_client_estimation'])
-      }
-      xml.ExtendedAttribute {
-        xml.FieldID 188743949
-        xml.Value struct.custom_field_value(@settings['loader_completion_date']).try(:to_time).try(:to_s, :ms_xml)
-      }
+	  getMappedAttrCF.each do |attr, cfId|
+		unless struct.custom_field_value(cfId).blank?
+			xml.ExtendedAttribute {
+				xml.FieldID exAttrCfHash[attr]
+				if attr.include? 'Date'
+					xml.Value struct.custom_field_value(cfId).try(:to_time).try(:to_s, :ms_xml)
+				else
+					xml.Value struct.custom_field_value(cfId)
+				end
+			}
+		end
+	  end
       xml.WBS(struct.outlinenumber)
       xml.OutlineNumber struct.outlinenumber
       xml.OutlineLevel struct.outlinelevel

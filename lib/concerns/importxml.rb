@@ -5,7 +5,7 @@ module Concerns::Importxml
     tasks_to_import = []
     raw_tasks.each do |index, task|
       struct = ImportTask.new
-      fields = %w(tid subject status_id level outlinenumber code estimated_hours start_date due_date priority done_ratio predecessors delays assigned_to parent_id description milestone tracker_id is_private uid spent_hours completion_date client_estimation)
+      fields = %w(tid subject status_id level outlinenumber code estimated_hours start_date due_date priority done_ratio predecessors delays assigned_to parent_id description milestone tracker_id is_private uid spent_hours cf_text1 cf_text2 cf_text3 cf_text4 cf_number1 cf_number2 cf_number3 cf_date1 cf_date2 cf_date3)
 
       (fields - @ignore_fields['import']).each do |field|
         eval("struct.#{field} = task[:#{field}]#{".try(:split, ', ')" if field.in?(%w(predecessors delays))}")
@@ -31,6 +31,10 @@ module Concerns::Importxml
     redmine_task_status = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[FieldName='Text14']/FieldID").try(:text).try(:to_i)
 	clientEstimateField = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[FieldName='Text17']/FieldID").try(:text).try(:to_i)
 	completionDateField = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[FieldName='Date5']/FieldID").try(:text).try(:to_i)
+	
+	settings ||= Setting.plugin_redmine_loader
+	
+	eaCfHash = getMappedCfAttribures(doc, settings)
 	
     default_issue_status_id = IssueStatus.first.id
 
@@ -58,9 +62,11 @@ module Concerns::Importxml
         struct.description = task.value_at('Notes', :strip)
         struct.predecessors = task.xpath('PredecessorLink').map { |predecessor| predecessor.value_at('PredecessorUID', :to_i) }
         struct.delays = task.xpath('PredecessorLink').map { |predecessor| predecessor.value_at('LinkLag', :to_i) }
-		struct.client_estimation = task.xpath("ExtendedAttribute[FieldID='#{clientEstimateField}']/Value").try(:text)
-		unless task.xpath("ExtendedAttribute[FieldID='#{completionDateField}']/Value").try(:text).blank?
-			struct.completion_date = task.xpath("ExtendedAttribute[FieldID='#{completionDateField}']/Value").try(:text).try(:split, "T").try(:fetch, 0)
+		eaCfHash.each do|attr, fieldId|
+			struct[attr] = task.xpath("ExtendedAttribute[FieldID='#{fieldId}']/Value").try(:text)
+			unless task.xpath("ExtendedAttribute[FieldID='#{fieldId}']/Value").try(:text).blank?
+				struct[attr] = task.xpath("ExtendedAttribute[FieldID='#{fieldId}']/Value").try(:text).try(:split, "T").try(:fetch, 0) if attr.include? "date"
+			end
 		end
         tasks.push(struct)
 
@@ -133,5 +139,21 @@ module Concerns::Importxml
       resources[resource_uid] = resource_name_element
     end
     return resources
+  end
+  
+  def getMappedCfAttribures(doc, settings)
+	eaCfHash = Hash.new
+	['text', 'number', 'date'].each do |eaType|
+		exAttrCount = eaType == 'text' ? 4 : 3
+		for i in 1..exAttrCount
+			attrName = eaType + i.to_s
+			exAttrName = settings['loader_extended_' + attrName]
+			cfId = settings['loader_cf_' + attrName]
+			unless exAttrName.blank? || (cfId.blank? || cfId.to_i == 0 )
+				eaCfHash['cf_' + attrName] = doc.xpath("Project/ExtendedAttributes/ExtendedAttribute[FieldName='#{exAttrName}']/FieldID").try(:text).try(:to_i)
+			end
+		end
+	end
+	eaCfHash
   end
 end

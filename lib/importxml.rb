@@ -20,7 +20,18 @@ class Importxml
     # keep track of the outlineNumbers to set the parent_id
     outlinenumber_to_issue_id = {}
 	settings ||= Setting.plugin_redmine_loader
-
+	eaCfHash = Hash.new
+	['text', 'number', 'date'].each do |eaType|
+		exAttrCount = eaType == 'text' ? 4 : 3
+		for i in 1..exAttrCount
+			attrName = eaType + i.to_s
+			exAttrName = settings['loader_extended_' + attrName]
+			cfId = settings['loader_cf_' + attrName]
+			unless exAttrName.blank? || (cfId.blank? || cfId.to_i == 0 )
+				eaCfHash['cf_' + attrName] = cfId.to_i
+			end
+		end
+	end
     Issue.transaction do
       to_import.each do |source_issue|
         unless source_issue.milestone.to_i == 1 && sync_versions
@@ -39,7 +50,11 @@ class Importxml
           end
 
           issue.assigned_to_id = source_issue.assigned_to
-		  issue.custom_field_values = {settings['loader_client_estimation'].to_i => source_issue.client_estimation, settings['loader_completion_date'].to_i => source_issue.completion_date}
+		  cfValues = Hash.new
+		  eaCfHash.each do |attr, cfId|
+			cfValues[cfId] =  source_issue[attr]
+		  end
+		  issue.custom_field_values = cfValues
           if issue.save!
             puts "DEBUG: Issue #{issue.subject} imported"
 

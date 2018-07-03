@@ -27,9 +27,9 @@ class LoaderController < ApplicationController
   def analyze
     begin
 	  @attachedFile =  saveAttachments(params[:attachments])
-	  
-      xmlfile = @attachedFile.diskfile #params[:import][:xmlfile].try(:tempfile)
-      if !xmlfile.blank? && valid_extension?(@attachedFile.filename) &&  @settings['loader_project_cf'].to_i != 0 
+	  xmlfile = nil
+      xmlfile = @attachedFile.diskfile unless @attachedFile.blank? #params[:import][:xmlfile].try(:tempfile)
+      if !@attachedFile.blank? && !xmlfile.blank? && valid_extension?(@attachedFile.filename) &&  @settings['loader_project_cf'].to_i != 0 
         @import = Importxml.new
         #byte = xmlfile.getc
         #xmlfile.rewind
@@ -49,18 +49,20 @@ class LoaderController < ApplicationController
 		@project.save
         flash[:notice] = l(:tasks_read_successfully)
       else
-	    if !valid_extension?(@attachedFile.filename)
+		if @attachedFile.blank?
+			msg = l(:choose_file_warning)
+	    elsif !valid_extension?(@attachedFile.filename)
 			msg = l(:label_file_extension)
 		elsif @settings['loader_project_cf'].to_i == 0
 			msg = l(:label_revision_configure)
 		else 
 			msg = l(:choose_file_warning)
 		end
-		destroyAttachements(@attachedFile.id)
+		destroyAttachements(@attachedFile.id) unless @attachedFile.blank?
         flash[:error] = msg
       end
     rescue => error
-	  destroyAttachements(@attachedFile.id)
+	  destroyAttachements(@attachedFile.id) unless @attachedFile.blank?
       lines = error.message.split("\n")
       flash[:error] = l(:failed_read) + lines.to_s
     end
@@ -69,14 +71,16 @@ class LoaderController < ApplicationController
   
   def saveAttachments(attachments)
 	attachment = nil
-	params[:attachments].each do |attachment_param|
-		attachment = Attachment.find_by_token(attachment_param[1][:token])
-		unless attachment.blank?
-			attachment.container_type = @project.class.name
-			attachment.container_id = @project.id
-			attachment.filename = Time.now.to_s + attachment.filename
-			attachment.description = attachment_param[1][:description]
-			attachment.save
+	unless attachments.blank?
+		attachments.each do |attachment_param|
+			attachment = Attachment.find_by_token(attachment_param[1][:token])
+			unless attachment.blank?
+				attachment.container_type = @project.class.name
+				attachment.container_id = @project.id
+				attachment.filename = Time.now.to_s + attachment.filename
+				attachment.description = attachment_param[1][:description]
+				attachment.save
+			end
 		end
 	end
 	attachment

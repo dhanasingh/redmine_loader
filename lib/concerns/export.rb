@@ -181,16 +181,16 @@ module Concerns::Export
     return nested_issues.sort_by!(&:outlinenumber)
   end
 
-  def get_priority_value(priority_name)
-    value = case priority_name
-            when 'Minimal' then 100
-            when 'Low' then 300
-            when 'Normal' then 500
-            when 'High' then 700
-            when 'Immediate' then 900
-            end
-    return value
-  end
+  # def get_priority_value(priority_name)
+    # value = case priority_name
+            # when 'Minimal' then 100
+            # when 'Low' then 300
+            # when 'Normal' then 500
+            # when 'High' then 700
+            # when 'Immediate' then 900
+            # end
+    # return value
+  # end
 
   def get_scorm_time time
     return 'PT8H0M0S' if time.nil? || time.zero?
@@ -213,7 +213,7 @@ module Concerns::Export
       xml.IsNull 0
       xml.CreateDate struct.created_on.to_s(:ms_xml)
       xml.HyperlinkAddress issue_url(struct.issue)
-      xml.Priority(ignore_field?('priority', 'export') ? 500 : get_priority_value(struct.priority.name))
+      xml.Priority(ignore_field?('priority', 'export') ? 500 : struct.priority_id)
       start_date = struct.issue.next_working_date(struct.start_date || struct.created_on.to_date)
       xml.Start start_date.to_time.to_s(:ms_xml)
       finish_date = if struct.due_date

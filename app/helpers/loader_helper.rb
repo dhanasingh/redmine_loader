@@ -16,16 +16,16 @@ module LoaderHelper
     select_tag "import[tasks][#{index}][done_ratio]", options_for_select((0..10).to_a.map {|p| (p*10)}, task_percent)
   end
 
-  def loader_priority_select_tag(task_priority, index)
-    priority_name = case task_priority.to_i
-               when 0..200 then 'Minimal'
-               when 201..400 then 'Low'
-               when 401..600 then 'Normal'
-               when 601..800 then 'High'
-               when 801..1000 then 'Immediate'
-               end
-	priorityId = map_priority[priority_name]		   
-    select_tag "import[tasks][#{index}][priority]", options_from_collection_for_select(IssuePriority.active, :id, :name, priorityId)
+def loader_priority_select_tag(task_priority, index)
+    # priority_name = case task_priority.to_i
+               # when 0..200 then 'Minimal'
+               # when 201..400 then 'Low'
+               # when 401..600 then 'Normal'
+               # when 601..800 then 'High'
+               # when 801..1000 then 'Immediate'
+               # end
+	# priorityId = map_priority[priority_name]
+    select_tag "import[tasks][#{index}][priority]", options_from_collection_for_select(IssuePriority.active, :id, :name, task_priority.to_i)
   end
 
   def ignore_field?(field, way)
@@ -40,9 +40,9 @@ module LoaderHelper
     @map_trackers ||= Hash[@project.trackers.map { |tracker| [tracker.name, tracker.id] }]
   end
   
-  def map_priority
-	@map_priority ||= Hash[IssuePriority.active.map { |priority| [priority.name, priority.id] }]
-  end
+  # def map_priority
+	# @map_priority ||= Hash[IssuePriority.active.map { |priority| [priority.name, priority.id] }]
+  # end
   
   def getCfListArr(customFields, cfType, needBlank)
 	unless customFields.blank?

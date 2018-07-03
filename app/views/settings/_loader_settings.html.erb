@@ -8,31 +8,59 @@
 	cfIssueDate = loader_helper.getCfListArr(issue_custom_fields, ['date'], true)
 	cfIssueNumber = loader_helper.getCfListArr(issue_custom_fields, ['float','int'], true)
 %>
-<%= content_tag :fieldset, class: 'box' do %>
-  <%= content_tag :legend, t('.custom_mapping') %>
   <%= loader_setting_checkbox('import', 'ignore_fields', 'attach_imported_files') %>
   <p style="padding-left: 190px;">
 		<label><%= l(:label_project_revision) %> </label>
 		<%=h select_tag('settings[loader_project_cf]', options_for_select(cfProjRevision, :selected =>  @settings['loader_project_cf'])) %>
   </p>
-  <% for i in 1..4 %>
-	  <p style="padding-left: 190px;">
-			<%=h select_tag("settings[loader_extended_text#{i}]", options_for_select(loader_helper.getExtentedAttr('Text', [14, 15, 16]), :selected =>  @settings["loader_extended_text#{i}"])) %>
-			<%=h select_tag("settings[loader_cf_text#{i}]", options_for_select(cfIssueString, :selected =>  @settings["loader_cf_text#{i}"])) %>
-	  </p>
-  <% end %>
-  <% for i in 1..3 %>
-	  <p style="padding-left: 190px;">
-			<%=h select_tag("settings[loader_extended_number#{i}]", options_for_select(loader_helper.getExtentedAttr('Number'), :selected =>  (@settings["loader_extended_number#{i}"].blank?  ? "Number#{i}" : @settings["loader_extended_number#{i}"]))) %>
-			<%=h select_tag("settings[loader_cf_number#{i}]", options_for_select(cfIssueNumber, :selected =>  @settings["loader_cf_number#{i}"])) %>
-	  </p>
-  <% end %>
-  <% for i in 1..3 %>
-	  <p style="padding-left: 190px;">
-			<%=h select_tag("settings[loader_extended_date#{i}]", options_for_select(loader_helper.getExtentedAttr('Date'), :selected =>  @settings["loader_extended_date#{i}"])) %>
-			<%=h select_tag("settings[loader_cf_date#{i}]", options_for_select(cfIssueDate, :selected =>  @settings["loader_cf_date#{i}"])) %>
-	  </p>
-  <% end %>
+<%= content_tag :fieldset, class: 'box' do %>
+  <%= content_tag :legend, t('.custom_mapping') %>
+    <%= content_tag :fieldset, class: 'box' do %>
+      <%= content_tag :legend, t('.Text Fields') %>	
+		<table align='center'>
+			<tr align='center'> 
+				<th><%=h l(:label_project_libre_field) %></th>
+				<th><%=h l(:label_redmine_custom_field) %></th>
+			</tr>
+		  <% for i in 1..4 %>
+			  <tr align='center'> 
+					<td><%=h select_tag("settings[loader_extended_text#{i}]", options_for_select(loader_helper.getExtentedAttr('Text', [14, 15, 16]), :selected =>  @settings["loader_extended_text#{i}"])) %></td>
+					<td><%=h select_tag("settings[loader_cf_text#{i}]", options_for_select(cfIssueString, :selected =>  @settings["loader_cf_text#{i}"])) %></td>
+				</tr> 
+		  <% end %>
+		</table>
+	<% end %>
+	<%= content_tag :fieldset, class: 'box' do %>
+      <%= content_tag :legend, t('.Number Fields') %>
+	    <table align='center'>
+			<tr align='center'> 
+				<th><%=h l(:label_project_libre_field) %></th>
+				<th><%=h l(:label_redmine_custom_field) %></th>
+			</tr>
+		  <% for i in 1..3 %>
+			  <tr align='center'>
+					<td><%=h select_tag("settings[loader_extended_number#{i}]", options_for_select(loader_helper.getExtentedAttr('Number'),
+					:selected =>  @settings["loader_extended_number#{i}"])) %></td>
+					<td><%=h select_tag("settings[loader_cf_number#{i}]", options_for_select(cfIssueNumber, :selected =>  @settings["loader_cf_number#{i}"])) %></td>
+			  </tr>
+		  <% end %>
+		</table>
+	<% end %>
+	<%= content_tag :fieldset, class: 'box' do %>
+	  <%= content_tag :legend, t('.Date Fields') %>
+	     <table align='center'>
+			<tr align='center'> 
+				<th><%=h l(:label_project_libre_field) %></th>
+				<th><%=h l(:label_redmine_custom_field) %></th>
+			</tr>
+		  <% for i in 1..3 %>
+			<tr align='center'>
+					<td><%=h select_tag("settings[loader_extended_date#{i}]", options_for_select(loader_helper.getExtentedAttr('Date'), :selected =>  @settings["loader_extended_date#{i}"])) %></td>
+					<td><%=h select_tag("settings[loader_cf_date#{i}]", options_for_select(cfIssueDate, :selected =>  @settings["loader_cf_date#{i}"])) %></td>
+			</tr>
+		  <% end %>
+		</table>
+	<% end %>	  
 <% end %>
 <%= content_tag :p do %>
   <%= content_tag :label, t('.redmine_status_alias') %>

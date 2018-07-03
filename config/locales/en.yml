@@ -47,6 +47,8 @@ en:
   label_confirmation_revision_msg: Are you sure want to update the revision %{revision}
   label_confirmation_msg: Are you sure want to import the tasks
   label_change_all_tracker: Change All Tracker
+  label_project_libre_field: ProjectLibre Field
+  label_redmine_custom_field: Redmine Custom Field
   settings:
     loader_settings:
       tracker_alias: Alias for Tracker field
@@ -58,5 +60,3 @@ en:
       import_settings: Import settings
       ignore_fields: Ignore fields
       custom_mapping: Custom Field Mapping
-      
- 

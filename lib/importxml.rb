@@ -58,15 +58,15 @@ class Importxml
           if issue.save!
             puts "DEBUG: Issue #{issue.subject} imported"
 
-            if source_issue.spent_hours.to_f > issue.total_spent_hours
-              TimeEntry.create do |te|
-                te.user_id = source_issue.assigned_to
-                te.project_id = project_id
-                te.hours = source_issue.spent_hours.to_f - issue.total_spent_hours
-                te.spent_on = Date.today
-                te.issue_id = issue.id
-              end
-            end
+            # if source_issue.spent_hours.to_f > issue.total_spent_hours
+              # TimeEntry.create do |te|
+                # te.user_id = source_issue.assigned_to
+                # te.project_id = project_id
+                # te.hours = source_issue.spent_hours.to_f - issue.total_spent_hours
+                # te.spent_on = Date.today
+                # te.issue_id = issue.id
+              # end
+            # end
           end
 
           # Now that we know this issue's Redmine issue ID, save it off for later

@@ -133,7 +133,7 @@ module Concerns::Export
           source_issues.select { |issue| issue.assigned_to_id? && issue.leaf? }.each do |issue|
             @uid += 1
             xml.Assignment {
-              unless ignore_field?('estimated_hours', 'export') && !issue.leaf?
+              unless !issue.leaf? #ignore_field?('estimated_hours', 'export') && 
                 time = get_scorm_time(issue.estimated_hours)
                 xml.Work time
                 xml.RegularWork time
@@ -142,7 +142,7 @@ module Concerns::Export
               xml.UID @uid
               xml.TaskUID @task_id_to_uid[issue.id]
               xml.ResourceUID @resource_id_to_uid[issue.assigned_to_id]
-              xml.PercentWorkComplete issue.done_ratio unless ignore_field?('done_ratio', 'export')
+              xml.PercentWorkComplete issue.done_ratio #unless ignore_field?('done_ratio', 'export')
               xml.Units 1
               unless issue.total_spent_hours.zero?
                 xml.TimephasedData {
@@ -208,12 +208,12 @@ module Concerns::Export
       xml.UID @uid
       xml.ID id.next
       xml.Name(struct.subject)
-      xml.Notes(struct.description) unless ignore_field?('description', 'export')
+      xml.Notes(struct.description) #unless ignore_field?('description', 'export')
       xml.Active 1
       xml.IsNull 0
       xml.CreateDate struct.created_on.to_s(:ms_xml)
       xml.HyperlinkAddress issue_url(struct.issue)
-      xml.Priority(ignore_field?('priority', 'export') ? 500 : struct.priority_id)
+      xml.Priority struct.priority_id #(ignore_field?('priority', 'export') ? 500 : struct.priority_id)
       start_date = struct.issue.next_working_date(struct.start_date || struct.created_on.to_date)
       xml.Start start_date.to_time.to_s(:ms_xml)
       finish_date = if struct.due_date
@@ -243,7 +243,7 @@ module Concerns::Export
       xml.ActualWork get_scorm_time(struct.total_spent_hours)
       xml.Milestone 0
       xml.FixedCostAccrual 3
-      xml.ConstraintType 0 #2
+      xml.ConstraintType 0 #2 Default is as soon as possible in projectlibre so change to zero
       xml.ConstraintDate start_date.to_time.to_s(:ms_xml)
       xml.IgnoreResourceCalendar 0
       parent = struct.leaf? ? 0 : 1

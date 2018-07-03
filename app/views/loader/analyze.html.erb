@@ -19,9 +19,9 @@
         <th><%= l(:tracker) %></th>
         <th><%= link_to_function(l(:start_date), 'clearDates(this);', class: 'start_date') %></th>
         <th><%= link_to_function(l(:end_date), 'clearDates(this);', class: 'end_date') %></th>
-        <%= content_tag(:th, '%') unless ignore_field?('done_ratio', 'import') %></th>
+        <%= content_tag(:th, '%')  %></th>
         <th><%= l(:assigned_to) %></th>
-        <%= content_tag(:th, l(:priority)) unless ignore_field?('priority', 'import') %>
+        <%= content_tag(:th, l(:priority))  %>
         <th><%= link_to_function(l(:field_is_private), 'toggleCheckboxesSelection(this);', class: 'is_private') %></th>
         <th><%= l(:requires) %></th>
       </tr>

@@ -5,9 +5,9 @@ module Concerns::Importxml
     tasks_to_import = []
     raw_tasks.each do |index, task|
       struct = ImportTask.new
-      fields = %w(tid subject status_id level outlinenumber code estimated_hours start_date due_date priority done_ratio predecessors delays assigned_to parent_id description milestone tracker_id is_private uid spent_hours cf_text1 cf_text2 cf_text3 cf_text4 cf_number1 cf_number2 cf_number3 cf_date1 cf_date2 cf_date3)
+      fields = %w(tid subject status_id level outlinenumber code estimated_hours start_date due_date priority done_ratio predecessors delays assigned_to parent_id description milestone tracker_id is_private uid cf_text1 cf_text2 cf_text3 cf_text4 cf_number1 cf_number2 cf_number3 cf_date1 cf_date2 cf_date3) #spent_hours
 
-      (fields - @ignore_fields['import']).each do |field|
+      fields.each do |field| # fields - @ignore_fields['import']
         eval("struct.#{field} = task[:#{field}]#{".try(:split, ', ')" if field.in?(%w(predecessors delays))}")
       end
       struct.status_id ||= IssueStatus.default
@@ -53,7 +53,7 @@ module Concerns::Importxml
         struct.subject = task.at('Name').text.strip
         struct.start_date = task.value_at('Start', :split, "T").try(:fetch, 0)
         struct.due_date = task.value_at('Finish', :split, "T").try(:fetch, 0)
-        struct.spent_hours = task.at('ActualWork').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
+        # struct.spent_hours = task.at('ActualWork').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
         struct.priority = task.at('Priority').try(:text)
         struct.tracker_name = task.xpath("ExtendedAttribute[FieldID='#{tracker_field}']/Value").try(:text)
         struct.tid = task.xpath("ExtendedAttribute[FieldID='#{issue_rid}']/Value").try(:text).try(:to_i)

@@ -188,12 +188,12 @@ class LoaderController < ApplicationController
 
   def get_import_settings
     @is_private_by_default = @settings['import'].blank? ? false : @settings['import']['is_private_by_default'] == '1'
-    get_ignore_fields('import')
+    #get_ignore_fields('import')
   end
 
   def get_export_settings
     @export_versions = @settings['export'].blank? ? false : @settings['export']['sync_versions'] == '1'
-    get_ignore_fields('export')
+    #get_ignore_fields('export')
   end
 
   def get_ignore_fields(way)

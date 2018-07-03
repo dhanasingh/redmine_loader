@@ -9,7 +9,7 @@
 	cfIssueNumber = loader_helper.getCfListArr(issue_custom_fields, ['float','int'], true)
 %>
   <%= loader_setting_checkbox('import', 'ignore_fields', 'attach_imported_files') %>
-  <p style="padding-left: 190px;">
+  <p>
 		<label><%= l(:label_project_revision) %> </label>
 		<%=h select_tag('settings[loader_project_cf]', options_for_select(cfProjRevision, :selected =>  @settings['loader_project_cf'])) %>
   </p>
@@ -17,10 +17,10 @@
   <%= content_tag :legend, t('.custom_mapping') %>
     <%= content_tag :fieldset, class: 'box' do %>
       <%= content_tag :legend, t('.Text Fields') %>	
-		<table align='center'>
+		<table align='left'>
 			<tr align='center'> 
-				<th><%=h l(:label_project_libre_field) %></th>
-				<th><%=h l(:label_redmine_custom_field) %></th>
+				<th style="width:30%"><%=h l(:label_project_libre_field) %></th>
+				<th style="width:30%"><%=h l(:label_redmine_custom_field) %></th>
 			</tr>
 		  <% for i in 1..4 %>
 			  <tr align='center'> 
@@ -32,10 +32,10 @@
 	<% end %>
 	<%= content_tag :fieldset, class: 'box' do %>
       <%= content_tag :legend, t('.Number Fields') %>
-	    <table align='center'>
+	    <table align='left'>
 			<tr align='center'> 
-				<th><%=h l(:label_project_libre_field) %></th>
-				<th><%=h l(:label_redmine_custom_field) %></th>
+				<th style="width:30%"><%=h l(:label_project_libre_field) %></th>
+				<th style="width:30%"><%=h l(:label_redmine_custom_field) %></th>
 			</tr>
 		  <% for i in 1..3 %>
 			  <tr align='center'>
@@ -48,10 +48,10 @@
 	<% end %>
 	<%= content_tag :fieldset, class: 'box' do %>
 	  <%= content_tag :legend, t('.Date Fields') %>
-	     <table align='center'>
+	     <table align='left'>
 			<tr align='center'> 
-				<th><%=h l(:label_project_libre_field) %></th>
-				<th><%=h l(:label_redmine_custom_field) %></th>
+				<th style="width:30%"><%=h l(:label_project_libre_field) %></th>
+				<th style="width:30%"><%=h l(:label_redmine_custom_field) %></th>
 			</tr>
 		  <% for i in 1..3 %>
 			<tr align='center'>

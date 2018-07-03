@@ -21,17 +21,17 @@ module Concerns::Export
           xml.ExtendedAttribute {
             xml.FieldID 188744000
             xml.FieldName 'Text14'
-            xml.Alias @settings['redmine_status_alias']
+            #xml.Alias @settings['redmine_status_alias']
           }
           xml.ExtendedAttribute {
             xml.FieldID 188744001
             xml.FieldName 'Text15'
-            xml.Alias @settings['redmine_id_alias']
+            #xml.Alias @settings['redmine_id_alias']
           }
           xml.ExtendedAttribute {
             xml.FieldID 188744002
             xml.FieldName 'Text16'
-            xml.Alias @settings['tracker_alias']
+            #xml.Alias @settings['tracker_alias']
           }
 		  getMappedAttrCF.each do |attr, cfId|
 				xml.ExtendedAttribute {

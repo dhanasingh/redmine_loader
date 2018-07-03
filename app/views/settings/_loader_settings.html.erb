@@ -62,18 +62,18 @@
 		</table>
 	<% end %>	  
 <% end %>
-<%= content_tag :p do %>
-  <%= content_tag :label, t('.redmine_status_alias') %>
-  <%= text_field_tag 'settings[redmine_status_alias]', @settings['redmine_status_alias'] %>
-<% end %>
-<%= content_tag :p do %>
-  <%= content_tag :label, t('.redmine_id_alias') %>
-  <%= text_field_tag 'settings[redmine_id_alias]', @settings['redmine_id_alias'] %>
-<% end %>
-<%= content_tag :p do %>
-  <%= content_tag :label, t('.tracker_alias') %>
-  <%= text_field_tag 'settings[tracker_alias]', @settings['tracker_alias'] %>
-<% end %>
+<%#= content_tag :p do %>
+  <%#= content_tag :label, t('.redmine_status_alias') %>
+  <%#= text_field_tag 'settings[redmine_status_alias]', @settings['redmine_status_alias'] %>
+<%# end %>
+<%#= content_tag :p do %>
+  <%#= content_tag :label, t('.redmine_id_alias') %>
+  <%#= text_field_tag 'settings[redmine_id_alias]', @settings['redmine_id_alias'] %>
+<%# end %>
+<%#= content_tag :p do %>
+  <%#= content_tag :label, t('.tracker_alias') %>
+  <%#= text_field_tag 'settings[tracker_alias]', @settings['tracker_alias'] %>
+<%# end %>
 <%= content_tag :fieldset, class: 'box' do %>
   <%= content_tag :legend, t('.import_settings') %>
   <%= loader_setting_checkbox('import', 'is_private_by_default') %>

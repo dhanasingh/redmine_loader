@@ -127,6 +127,8 @@ class Importxml
         if parent_outlinenumber.present?
           if destination_issue = Issue.find_by_id_and_project_id(uid_to_issue_id[source_issue[:uid]], project_id)
             destination_issue.update_attributes(parent_issue_id: outlinenumber_to_issue_id[parent_outlinenumber])
+			parent_issue = Issue.try(:find, outlinenumber_to_issue_id[parent_outlinenumber])
+			parent_issue.update_attributes(estimated_hours: nil) unless parent_issue.blank? || parent_issue.estimated_hours.blank?
           end
         end
       end

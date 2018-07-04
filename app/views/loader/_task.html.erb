@@ -6,7 +6,7 @@
     <%= hidden_field_tag "import[tasks][#{index}][tid]", h(task.tid) %>
     <%= hidden_field_tag "import[tasks][#{index}][level]", h(task.level) %>
     <%= hidden_field_tag "import[tasks][#{index}][outlinenumber]", h(task.outlinenumber) %>
-    <%= hidden_field_tag "import[tasks][#{index}][estimated_hours]", h(task.estimated_hours) if task.estimated_hours %>
+    <%= hidden_field_tag "import[tasks][#{index}][estimated_hours]", h(task.work.blank? ? task.estimated_hours : task.work) if task.estimated_hours || task.work %>
     <%= hidden_field_tag "import[tasks][#{index}][description]", h(task.description) if task.description %>
     <%= hidden_field_tag "import[tasks][#{index}][delays]", h(task.delays.join(', ')) %>
     <%= hidden_field_tag "import[tasks][#{index}][milestone]", h(task.milestone) %>

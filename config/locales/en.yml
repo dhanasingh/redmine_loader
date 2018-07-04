@@ -49,6 +49,7 @@ en:
   label_change_all_tracker: Change All Tracker
   label_project_libre_field: ProjectLibre Field
   label_redmine_custom_field: Redmine Custom Field
+  label_ex_attr_percent_complete: Extended Attribute for Percent Complete 
   settings:
     loader_settings:
       tracker_alias: Alias for Tracker field

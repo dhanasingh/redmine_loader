@@ -33,6 +33,12 @@ module Concerns::Export
             xml.FieldName 'Text16'
             #xml.Alias @settings['tracker_alias']
           }
+		  unless @settings['loader_percent_complete_attr'].blank?
+			xml.ExtendedAttribute {
+				xml.FieldID exAttrCfHash[@settings['loader_percent_complete_attr']]
+				xml.FieldName @settings['loader_percent_complete_attr']
+			}
+		  end
 		  getMappedAttrCF.each do |attr, cfId|
 				xml.ExtendedAttribute {
 				xml.FieldID exAttrCfHash[attr]
@@ -284,7 +290,13 @@ module Concerns::Export
       xml.ExtendedAttribute {
         xml.FieldID 188744002
         xml.Value struct.tracker.name
-      }
+      }  
+	  unless @settings['loader_percent_complete_attr'].blank?
+		  xml.ExtendedAttribute {
+			xml.FieldID exAttrCfHash[@settings['loader_percent_complete_attr']]
+			xml.Value struct.done_ratio #unless ignore_field?('done_ratio', 'export')
+		  }
+	  end
 	  getMappedAttrCF.each do |attr, cfId|
 		unless struct.custom_field_value(cfId).blank?
 			xml.ExtendedAttribute {

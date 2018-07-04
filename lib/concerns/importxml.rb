@@ -35,6 +35,7 @@ module Concerns::Importxml
 	settings ||= Setting.plugin_redmine_loader
 	
 	eaCfHash = getMappedCfAttribures(doc, settings)
+	eaFieldHash = getExtentedAttrFieldId
 	
     default_issue_status_id = IssueStatus.first.id
 
@@ -62,6 +63,10 @@ module Concerns::Importxml
         struct.description = task.value_at('Notes', :strip)
         struct.predecessors = task.xpath('PredecessorLink').map { |predecessor| predecessor.value_at('PredecessorUID', :to_i) }
         struct.delays = task.xpath('PredecessorLink').map { |predecessor| predecessor.value_at('LinkLag', :to_i) }
+		unless settings['loader_percent_complete_attr'].blank?
+			doneRatio = task.xpath("ExtendedAttribute[FieldID='#{eaFieldHash["#{settings['loader_percent_complete_attr']}"]}']/Value").try(:text)
+			struct.done_ratio = doneRatio unless doneRatio.blank?
+		end
 		eaCfHash.each do|attr, fieldId|
 			struct[attr] = task.xpath("ExtendedAttribute[FieldID='#{fieldId}']/Value").try(:text)
 			unless task.xpath("ExtendedAttribute[FieldID='#{fieldId}']/Value").try(:text).blank?

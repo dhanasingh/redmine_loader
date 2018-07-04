@@ -13,6 +13,10 @@
 		<label><%= l(:label_project_revision) %> </label>
 		<%=h select_tag('settings[loader_project_cf]', options_for_select(cfProjRevision, :selected =>  @settings['loader_project_cf'])) %>
   </p>
+  <p>
+		<label><%= l(:label_ex_attr_percent_complete) %> </label>
+		<%=h select_tag('settings[loader_percent_complete_attr]', options_for_select(loader_helper.getExtentedAttr('Number'), :selected =>  @settings['loader_percent_complete_attr'])) %>
+  </p>
 <%= content_tag :fieldset, class: 'box' do %>
   <%= content_tag :legend, t('.custom_mapping') %>
     <%= content_tag :fieldset, class: 'box' do %>

@@ -17,6 +17,7 @@ module Concerns::Export
       xml.Project('xmlns' => 'http://schemas.microsoft.com/project') {
         xml.Title @project.name + addRevision
 		xml.Name @project.name + addRevision
+		xml.ScheduleFromStart 1
         xml.ExtendedAttributes {
           xml.ExtendedAttribute {
             xml.FieldID 188744000

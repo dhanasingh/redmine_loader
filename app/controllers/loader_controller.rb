@@ -223,5 +223,8 @@ class LoaderController < ApplicationController
 	newRevisionValue = revisionValue.blank? ? 1 : (revisionValue.to_i + 1)
 	@project.custom_field_values = {@settings['loader_project_cf'].to_s => newRevisionValue.to_s}
 	@project.save
-  end
+	if @settings['import']['ignore_fields']['attach_imported_files'].blank? || @settings['import']['ignore_fields']['attach_imported_files'].to_i == 0 
+		destroyAttachements(params[:attachment_id])
+	end
+  end	
 end

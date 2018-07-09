@@ -119,7 +119,7 @@ module Concerns::Importxml
   def get_percent_complete(task)  
 	duration  = task.at('Duration').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
 	remainingDuration = task.at('RemainingDuration').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
-	percentComplete = (((duration.try(:to_hours).to_f - remainingDuration.try(:to_hours).to_f) / duration.try(:to_hours).to_f) * 100)
+	percentComplete = (((duration.try(:to_hours).to_f - remainingDuration.try(:to_hours).to_f) / duration.try(:to_hours).to_f) * 100) unless remainingDuration.blank?
 	percentComplete.to_i
   end
 

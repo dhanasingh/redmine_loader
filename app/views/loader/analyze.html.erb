@@ -39,7 +39,7 @@
 			msg = l(:label_confirmation_revision_msg, :revision => ("r-" + revision.to_s) ) if !revision.blank? && revision != 0  
 			
 		%>
-        <td align="right" colspan="10"><%= f.submit(l(:import_selected), {:data => { "confirm" => msg }, :name => 'import[import_selected]', :id => 'import[import_selected]'}) %></td>
+        <td align="right" colspan="10"><%= f.submit(l(:import_selected), {:data => { "confirm" => msg , :disable_with => l(:tasks_importing)}, :name => 'import[import_selected]', :id => 'import[import_selected]'}) %></td>
         <td><%= link_to(l(:back), new_project_loader_path) %></td>
       </tr>
     </table>

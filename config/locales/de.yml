@@ -2,6 +2,7 @@ de:
   menu_caption: MS Project
   import_tasks: Importieren
   import_selected: Ausgewählte Aufgaben importieren
+  tasks_importing: Tasks importing...
   export_tasks: Exportieren
   analyze: Analyzieren
   analyzing: Analyziere...

@@ -2,6 +2,7 @@ ru:
   menu_caption: MS Project
   import_tasks: Импорт задач
   import_selected: Импортировать
+  tasks_importing: Tasks importing...
   export_tasks: Экспорт задач
   analyze: Анализировать
   analyzing: Анализ...

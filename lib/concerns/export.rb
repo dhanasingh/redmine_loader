@@ -185,7 +185,7 @@ module Concerns::Export
         nested_issues << ExportTask.new(issue, issue.level.next, outlinenumber)
       end
     end
-    return nested_issues.sort_by!(&:outlinenumber)
+    return nested_issues.sort_by!{ |t| t.outlinenumber.split('.').collect{ |n| n.to_i+100000 }.join('.') } #(&:outlinenumber)
   end
 
   # def get_priority_value(priority_name)

@@ -63,6 +63,8 @@ class LoaderController < ApplicationController
       end
     rescue => error
 	  destroyAttachements(@attachedFile.id) unless @attachedFile.blank?
+	  logger.error "Exception occurs #{error.message}"
+	  logger.error "Exception backtrace #{error.backtrace}"
       lines = error.message.split("\n")
       flash[:error] = l(:failed_read) + lines.to_s
     end
@@ -149,6 +151,8 @@ class LoaderController < ApplicationController
 	  destroyAttachements(params[:attachment_id])
       flash[:error] = l(:unable_import) + error.to_s
       logger.debug "DEBUG: Unable to import tasks: #{ error }"
+	  logger.error "Exception occurs #{error.message}"
+	  logger.error "Exception backtrace #{error.backtrace}"
     end
 
     redirect_to new_project_loader_path

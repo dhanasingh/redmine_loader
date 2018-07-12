@@ -103,7 +103,7 @@ module Concerns::Importxml
 		 assigned_task.work = as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
 	  else	
 		work = as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') } 
-		assigned_task.work = (assigned_task.work.try(:to_hours)) + (work.try(:to_hours)) #get_scorm_time(
+		assigned_task.work = get_scorm_time((assigned_task.work.try(:to_hours)) + (work.try(:to_hours))).try{ |e| e.delete("PT").split(/H|M|S/)[0...-1].join(':') }
 	  end
     end
   end

@@ -33,6 +33,10 @@ class Importxml
 		end
 	end
     Issue.transaction do
+	  # Delete all the relations off the issues that we are going to import. If they continue existing we are going to create them. If not they must be deleted.
+	  to_import.each do |source_issue|
+		IssueRelation.delete_all(["issue_to_id = ?", source_issue.tid])
+	  end
       to_import.each do |source_issue|
         unless source_issue.milestone.to_i == 1 && sync_versions
           issue = update_existing ? Issue.where("id = ? AND project_id = ?", source_issue.tid, project_id).first_or_initialize : Issue.new
@@ -161,9 +165,9 @@ class Importxml
     end
 
     # Delete all the relations off the issues that we are going to import. If they continue existing we are going to create them. If not they must be deleted.
-    tasks.each do |source_issue|
-      IssueRelation.delete_all(["issue_to_id = ?", source_issue.uid])
-    end
+    # tasks.each do |source_issue|
+      # IssueRelation.delete_all(["issue_to_id = ?", source_issue.tid])
+    # end
 
     # Handle all the dependencies being careful if the parent doesn't exist
     IssueRelation.transaction do
@@ -178,8 +182,9 @@ class Importxml
               relation.issue_to_id = uid_to_issue_id[source_issue.uid]
               relation.relation_type = 'precedes'
 			  parent = Issue.find(uid_to_issue_id[parent_uid])
+			  parentTask = tasks.detect { |task| task.uid == parent_uid }
 			# Redmine does not have the time component, So if Task A completed in the middle of the day then the following task Task B starts at middle of the day So we have add delay -1 here
-			  if source_issue.start_date.to_date == parent.try(:due_date)
+			  if source_issue.start_date.to_date == parent.try(:due_date) || source_issue.start_date.to_date == parentTask.due_date.to_date
 				relation.delay = -1
 			  end
               # Set the delay of the relation if it exists.

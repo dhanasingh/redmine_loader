@@ -185,6 +185,7 @@ module Concerns::Export
         nested_issues << ExportTask.new(issue, issue.level.next, outlinenumber)
       end
     end
+	# To sort by outline number string (1.14, 1.9) then it will 1.14,1.9 . To correct tiss issue we add 100000 then change string which gives the expected sort 100000.100009, 100000.100014
     return nested_issues.sort_by!{ |t| t.outlinenumber.split('.').collect{ |n| n.to_i+100000 }.join('.') } #(&:outlinenumber)
   end
 

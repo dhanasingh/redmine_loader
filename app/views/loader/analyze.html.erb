@@ -36,7 +36,7 @@
         </td>
 		<% revision = @project.custom_field_value(@settings['loader_project_cf']) 			
 			msg = l(:label_confirmation_msg)
-			msg = l(:label_confirmation_revision_msg, :revision => ("r-" + revision.to_s) ) if !revision.blank? && revision != 0  
+			msg = l(:label_confirmation_revision_msg, :revision => revision.to_s ) if !revision.blank? && revision != 0  
 			
 		%>
         <td align="right" colspan="10"><%= f.submit(l(:import_selected), {:data => { "confirm" => msg , :disable_with => l(:tasks_importing)}, :name => 'import[import_selected]', :id => 'import[import_selected]'}) %></td>

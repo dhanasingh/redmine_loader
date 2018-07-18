@@ -45,7 +45,7 @@ ru:
   label_file_extension: Please choose the xml file.
   label_revision_configure: Please configure the revision custom field mapping
   field_attach_imported_files: Attach imported files
-  label_confirmation_revision_msg: Are you sure want to update the revision %{revision}
+  label_confirmation_revision_msg: Are you sure want to update the revision Rev- %{revision}
   label_confirmation_msg: Are you sure want to import the tasks
   label_change_all_tracker: Change All Tracker
   label_project_libre_field: ProjectLibre Field

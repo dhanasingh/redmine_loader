@@ -208,12 +208,13 @@ class LoaderController < ApplicationController
 	isValidateRevision = false
 	begin
 		projectName = xmldoc.xpath('Project').at('Name').text.strip
-		projectNameArray = projectName.split('-')
+		projectNameArray = projectName.split('|')
 		revisionValue = @project.custom_field_value(@settings['loader_project_cf'])	
-		nameArray = projectNameArray.last(2)
-		if revisionValue.blank? && nameArray[0] != 'r'		
+		revsionStr = projectNameArray.last
+		nameArray =  revsionStr.split('-')
+		if revisionValue.blank? && nameArray[0].strip != 'Rev'		
 			isValidateRevision = true
-		elsif  nameArray[0] == 'r' && (revisionValue.to_f == nameArray[1].to_f)
+		elsif  nameArray[0].strip == 'Rev' && (revisionValue.to_f == nameArray[1].strip.to_f)
 			isValidateRevision = true
 		end	
 	rescue Exception => e

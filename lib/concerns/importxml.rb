@@ -38,6 +38,8 @@ module Concerns::Importxml
 	eaFieldHash = getExtentedAttrFieldId
 	
     default_issue_status_id = IssueStatus.first.id
+	default_priority = IssuePriority.default.id
+	issuePriorityHash = map_priority
 
     doc.xpath('Project/Tasks/Task').each do |task|
       begin
@@ -55,7 +57,8 @@ module Concerns::Importxml
         struct.start_date = task.value_at('Start', :split, "T").try(:fetch, 0)
         struct.due_date = task.value_at('Finish', :split, "T").try(:fetch, 0)
         # struct.spent_hours = task.at('ActualWork').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
-        struct.priority = task.at('Priority').try(:text)
+		priority_id = task.at('Priority').try(:text).try(:to_i)
+        struct.priority = issuePriorityHash[priority_id].blank? ? default_priority : priority_id #task.at('Priority').try(:text)
         struct.tracker_name = task.xpath("ExtendedAttribute[FieldID='#{tracker_field}']/Value").try(:text)
         struct.tid = task.xpath("ExtendedAttribute[FieldID='#{issue_rid}']/Value").try(:text).try(:to_i)
         struct.estimated_hours = task.at('Duration').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') } #if struct.milestone.try(:zero?)

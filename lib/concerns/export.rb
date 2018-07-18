@@ -349,7 +349,7 @@ module Concerns::Export
   end
   
   def addRevision
-	revisionValue = "-r-"
+	revisionValue = " | Rev-"
 	revisionValue += @project.custom_value_for(@settings['loader_project_cf']).value unless @settings['loader_project_cf'].blank?
 	revisionValue
   end

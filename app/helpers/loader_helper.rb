@@ -40,9 +40,9 @@ def loader_priority_select_tag(task_priority, index)
     @map_trackers ||= Hash[@project.trackers.map { |tracker| [tracker.name, tracker.id] }]
   end
   
-  # def map_priority
-	# @map_priority ||= Hash[IssuePriority.active.map { |priority| [priority.name, priority.id] }]
-  # end
+  def map_priority
+	@map_priority ||= Hash[IssuePriority.active.map { |priority| [priority.id, priority.name] }]
+  end
   
   def getCfListArr(customFields, cfType, needBlank)
 	unless customFields.blank?

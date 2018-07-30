@@ -112,7 +112,8 @@ module Concerns::Importxml
   end
   
   def get_scorm_time time
-    return 'PT8H0M0S' if time.nil? || time.zero?
+	# Return zero work as zero because milestone have 0 hours
+    return 'PT8H0M0S' if time.nil? #|| time.zero?
     time = time.to_s.split('.')
     hours = time.first.to_i
     minutes = time.last.to_i == 0 ? 0 : (60 * "0.#{time.last}".to_f).to_i

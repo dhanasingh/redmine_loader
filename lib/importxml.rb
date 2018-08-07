@@ -173,7 +173,7 @@ class Importxml
     IssueRelation.transaction do
       tasks.each do |source_issue|
         #delaynumber = 0
-        source_issue.predecessors.each do |parent_uid|
+        source_issue.predecessors.each_with_index do |parent_uid, index|
           # Parent is being imported also. Go ahead and add the association
           if uid_to_issue_id.has_key?(parent_uid)
             # If the issue is not a milestone we have to create the issue relation
@@ -184,14 +184,23 @@ class Importxml
 			  parent = Issue.find(uid_to_issue_id[parent_uid])
 			  parentTask = tasks.detect { |task| task.uid == parent_uid }
 			# Redmine does not have the time component, So if Task A completed in the middle of the day then the following task Task B starts at middle of the day So we have add delay -1 here
-			  if source_issue.start_date.to_date == parent.try(:due_date) || source_issue.start_date.to_date == parentTask.due_date.to_date
+			  if !parent.try(:due_date).blank? && source_issue.start_date.to_date - parentTask.due_date.to_date == 0.0
+			  #source_issue.start_date.to_date == parent.try(:due_date) || source_issue.start_date.to_date == parentTask.due_date.to_date
 				relation.delay = -1
+			  else
+				# Set the delay of the relation if it exists.
+				if source_issue.try { |e| e.delays[index].to_i > 0 }
+					actualDelay = (source_issue.delays[index].to_i)/4800
+					
+					if !parent.try(:due_date).blank? && ((source_issue.start_date.to_date - parentTask.due_date.to_date) - actualDelay) == 0.0
+						relation.delay = actualDelay - 1 #(source_issue.delays[index].to_i)/4800
+					else
+						relation.delay = actualDelay
+					end
+					#delaynumber = delaynumber + 1
+				end
 			  end
-              # Set the delay of the relation if it exists.
-              #if source_issue.try { |e| e.delays[delaynumber].to_i > 0 }
-              #  i.delay = (source_issue.delays[delaynumber].to_i)/4800
-              #  delaynumber = delaynumber + 1
-              #end
+             
               relation.save
             end
           end

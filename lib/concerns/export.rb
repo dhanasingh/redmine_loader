@@ -277,8 +277,10 @@ module Concerns::Export
               xml.CrossProjectName relation.issue_from.project.name
             end
 			xml.Type 1
-            #xml.LinkLag (relation.delay * 4800)
-            #xml.LagFormat 7
+			if relation.delay > 0
+				xml.LinkLag (relation.delay * 4800)
+				xml.LagFormat 7
+			end
           }
         end
       end

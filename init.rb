@@ -8,6 +8,7 @@ ActionDispatch::Callbacks.to_prepare do
   SettingsHelper.__send__(:include, SettingsHelperPatch)
   Mailer.__send__(:include, LoaderMailer)
   Issue.__send__(:include, IssuePatch)
+  IssueRelation.__send__(:include, IssueRelationPatch)
   Redmine::NestedSet::Traversing.__send__(:include, TraversingPatch)
   Redmine::Views::OtherFormatsBuilder.__send__(:include, LoaderOtherFormatsBuilder)
 end

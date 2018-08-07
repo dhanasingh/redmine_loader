@@ -1,4 +1,6 @@
 module LoaderHelper
+  include Redmine::Utils::DateCalculation
+	
   def loader_user_select_tag(project, assigned_to, index)
     select_tag "import[tasks][#{index}][assigned_to]", options_from_collection_for_select(project.assignable_users, :id, :name, assigned_to ), { include_blank: true }
   end

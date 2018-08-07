@@ -168,7 +168,7 @@ class Importxml
     # tasks.each do |source_issue|
       # IssueRelation.delete_all(["issue_to_id = ?", source_issue.tid])
     # end
-
+	loder_helper = Object.new.extend(LoaderHelper)
     # Handle all the dependencies being careful if the parent doesn't exist
     IssueRelation.transaction do
       tasks.each do |source_issue|
@@ -192,7 +192,7 @@ class Importxml
 				if source_issue.try { |e| e.delays[index].to_i > 0 }
 					actualDelay = (source_issue.delays[index].to_i)/4800
 					
-					if !parent.try(:due_date).blank? && ((source_issue.start_date.to_date - parentTask.due_date.to_date) - actualDelay) == 0.0
+					if !parent.try(:due_date).blank? && loder_helper.working_days(parentTask.due_date.to_date, source_issue.start_date.to_date) - actualDelay == 0.0
 						relation.delay = actualDelay - 1 #(source_issue.delays[index].to_i)/4800
 					else
 						relation.delay = actualDelay

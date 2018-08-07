@@ -277,7 +277,7 @@ module Concerns::Export
               xml.CrossProjectName relation.issue_from.project.name
             end
 			xml.Type 1
-			if relation.delay > 0
+			if relation.delay > 0 && relation.issue_from.due_date != relation.issue_to.start_date
 				xml.LinkLag (relation.delay * 4800)
 				xml.LagFormat 7
 			end

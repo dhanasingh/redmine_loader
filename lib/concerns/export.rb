@@ -213,6 +213,8 @@ module Concerns::Export
 	exAttrCfHash = getExtentedAttrFieldId
     @uid += 1
     @task_id_to_uid[struct.id] = @uid
+	hook_constraint_type = call_hook(:module_export_get_constraint_type, { :struct => struct})
+	hook_constraint_date = call_hook(:module_export_get_constraint_date, { :struct => struct})
     xml.Task {
       xml.UID @uid
       xml.ID id.next
@@ -252,8 +254,8 @@ module Concerns::Export
       xml.ActualWork get_scorm_time(struct.total_spent_hours)
       xml.Milestone 0
       xml.FixedCostAccrual 3
-      xml.ConstraintType 0 #2 Default is as soon as possible in projectlibre so change to zero
-      xml.ConstraintDate start_date.to_time.to_s(:ms_xml)
+      xml.ConstraintType hook_constraint_type.blank? ? 0 : hook_constraint_type[0] #2 Default is as soon as possible in projectlibre so change to zero
+      xml.ConstraintDate hook_constraint_date.blank? ? start_date.to_time.to_s(:ms_xml) : hook_constraint_date[0].to_time.to_s(:ms_xml)
       xml.IgnoreResourceCalendar 0
       parent = struct.leaf? ? 0 : 1
       xml.Summary(parent)
@@ -277,8 +279,11 @@ module Concerns::Export
               xml.CrossProjectName relation.issue_from.project.name
             end
 			xml.Type 1
-			if relation.delay > 0 && relation.issue_from.due_date != relation.issue_to.start_date
-				xml.LinkLag (relation.delay * 4800)
+			delay = relation.delay
+			hook_delay = call_hook(:module_export_get_actual_delay, { :relation => relation})
+			delay = hook_delay[0] unless hook_delay.blank?
+			if delay > 0 && relation.issue_from.due_date != relation.issue_to.start_date
+				xml.LinkLag (delay * 4800).to_i
 				xml.LagFormat 7
 			end
           }

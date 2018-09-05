@@ -6,6 +6,9 @@ module Concerns::Importxml
     raw_tasks.each do |index, task|
       struct = ImportTask.new
       fields = %w(tid subject status_id level outlinenumber code estimated_hours start_date due_date priority done_ratio predecessors delays assigned_to parent_id description milestone tracker_id is_private uid cf_text1 cf_text2 cf_text3 cf_text4 cf_number1 cf_number2 cf_number3 cf_date1 cf_date2 cf_date3) #spent_hours
+	  
+	  hook_task_attr = call_hook(:module_get_additional_attr) 
+	  fields = fields + hook_task_attr[0] unless hook_task_attr.blank?
 
       fields.each do |field| # fields - @ignore_fields['import']
         eval("struct.#{field} = task[:#{field}]#{".try(:split, ', ')" if field.in?(%w(predecessors delays))}")
@@ -66,6 +69,7 @@ module Concerns::Importxml
         struct.description = task.value_at('Notes', :strip)
         struct.predecessors = task.xpath('PredecessorLink').map { |predecessor| predecessor.value_at('PredecessorUID', :to_i) }
         struct.delays = task.xpath('PredecessorLink').map { |predecessor| predecessor.value_at('LinkLag', :to_i) }
+		call_hook(:module_add_additional_attr_from_xml, { :struct => struct, :task => task })
 		unless settings['loader_percent_complete_attr'].blank?
 			doneRatio = task.xpath("ExtendedAttribute[FieldID='#{eaFieldHash["#{settings['loader_percent_complete_attr']}"]}']/Value").try(:text)
 			struct.done_ratio = doneRatio unless doneRatio.blank?

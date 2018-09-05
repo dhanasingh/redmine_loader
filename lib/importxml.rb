@@ -58,7 +58,10 @@ class Importxml
 		  eaCfHash.each do |attr, cfId|
 			cfValues[cfId] =  source_issue[attr]
 		  end
+		 
 		  issue.custom_field_values = cfValues
+		  Redmine::Hook.call_hook(:importxml_before_save_issue, { :issue => issue, :source_issue => source_issue })
+		  
           if issue.save!
             puts "DEBUG: Issue #{issue.subject} imported"
 
@@ -178,6 +181,7 @@ class Importxml
           if uid_to_issue_id.has_key?(parent_uid)
             # If the issue is not a milestone we have to create the issue relation
             IssueRelation.new do |relation|
+			  actualDelay = 0
               relation.issue_from_id = uid_to_issue_id[parent_uid]
               relation.issue_to_id = uid_to_issue_id[source_issue.uid]
               relation.relation_type = 'precedes'
@@ -200,8 +204,9 @@ class Importxml
 					#delaynumber = delaynumber + 1
 				end
 			  end
-             
-              relation.save
+			  
+			  Redmine::Hook.call_hook(:importxml_before_save_issue_relation, { :relation => relation, :actual_delay => actualDelay })			  
+              relation.save			  
             end
           end
         end

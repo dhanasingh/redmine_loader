@@ -12,6 +12,8 @@
     <%= hidden_field_tag "import[tasks][#{index}][milestone]", h(task.milestone) %>
     <%= hidden_field_tag "import[tasks][#{index}][predecessors]", h(task.predecessors.join(', ')) %>
     <%= hidden_field_tag "import[tasks][#{index}][status_id]", h(task.status_id) %>
+	<%= hidden_field_tag "import[tasks][#{index}][constraint_type]", h(task.constraint_type) %>
+	<%= hidden_field_tag "import[tasks][#{index}][constraint_date]", h(task.constraint_date) %>
 	<% ['text', 'number', 'date'].each do |eaType| %>
 			<% exAttrCount = eaType == 'text' ? 4 : 3 %>
 			<% for i in 1..exAttrCount %>

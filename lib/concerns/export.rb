@@ -136,9 +136,13 @@ module Concerns::Export
           end
         }
         xml.Assignments {
+		 
           source_issues = @query ? @query_issues : @project.issues
           source_issues.select { |issue| issue.assigned_to_id? && issue.leaf? }.each do |issue|
-            @uid += 1
+            @uid += 1	
+			units = 1			
+			hook_duration = call_hook(:module_export_get_duration, { :struct => issue})
+			units = (issue.estimated_hours / hook_duration[0]) unless hook_duration.blank?
             xml.Assignment {
               unless !issue.leaf? #ignore_field?('estimated_hours', 'export') && 
                 time = get_scorm_time(issue.estimated_hours)
@@ -150,7 +154,7 @@ module Concerns::Export
               xml.TaskUID @task_id_to_uid[issue.id]
               xml.ResourceUID @resource_id_to_uid[issue.assigned_to_id]
               xml.PercentWorkComplete issue.done_ratio #unless ignore_field?('done_ratio', 'export')
-              xml.Units 1
+              xml.Units units #1
               unless issue.total_spent_hours.zero?
                 xml.TimephasedData {
                   xml.Type 2
@@ -213,12 +217,19 @@ module Concerns::Export
 	exAttrCfHash = getExtentedAttrFieldId
     @uid += 1
     @task_id_to_uid[struct.id] = @uid
+    time = get_scorm_time(struct.estimated_hours)
+	duration = time
 	hook_constraint_type = call_hook(:module_export_get_constraint_type, { :struct => struct})
 	hook_constraint_date = call_hook(:module_export_get_constraint_date, { :struct => struct})
+	hook_task_type = call_hook(:module_export_get_task_type, { :struct => struct})
+	hook_duration = call_hook(:module_export_get_duration, { :struct => struct})
+	duration = get_scorm_time(hook_duration[0]) unless hook_duration.blank?
+	
     xml.Task {
       xml.UID @uid
       xml.ID id.next
       xml.Name(struct.subject)
+	  xml.Type hook_task_type.blank? ? 0 : hook_task_type[0] 
       xml.Notes(struct.description) #unless ignore_field?('description', 'export')
       xml.Active 1
       xml.IsNull 0
@@ -226,6 +237,8 @@ module Concerns::Export
       xml.HyperlinkAddress issue_url(struct.issue)
       xml.Priority struct.priority_id #(ignore_field?('priority', 'export') ? 500 : struct.priority_id)
       start_date = struct.issue.next_working_date(struct.start_date || struct.created_on.to_date)
+	  hook_start = call_hook(:module_export_get_task_start_time, { :struct => struct})
+	  start_date = hook_start[0] unless hook_start.blank?
       xml.Start start_date.to_time.to_s(:ms_xml)
       finish_date = if struct.due_date
                       # if struct.issue.next_working_date(struct.due_date).day == start_date.day
@@ -237,6 +250,8 @@ module Concerns::Export
                     else
                       start_date.next
                     end
+	  hook_finish = call_hook(:module_export_get_task_finish_time, { :struct => struct})
+	  finish_date = hook_finish[0] unless hook_finish.blank?
       xml.Finish finish_date.to_time.to_s(:ms_xml)
       xml.ManualStart start_date.to_time.to_s(:ms_xml)
       xml.ManualFinish finish_date.to_time.to_s(:ms_xml)
@@ -244,9 +259,8 @@ module Concerns::Export
       xml.EarlyFinish finish_date.to_time.to_s(:ms_xml)
       xml.LateStart start_date.to_time.to_s(:ms_xml)
       xml.LateFinish finish_date.to_time.to_s(:ms_xml)
-      time = get_scorm_time(struct.estimated_hours)
       xml.Work time
-      xml.Duration time
+      xml.Duration duration #get_scorm_time(hook_duration[0])  #time
       #xml.ManualDuration time
       #xml.RemainingDuration time
       #xml.RemainingWork time

@@ -101,11 +101,11 @@ module Concerns::Importxml
     resource_by_user = get_bind_resource_users(doc)
     doc.xpath('Project/Assignments/Assignment').each do |as|
       resource_id = as.at('ResourceUID').text.to_i
-      next if resource_id == Importxml::NOT_USER_ASSIGNED
+      #next if resource_id == Importxml::NOT_USER_ASSIGNED
       task_uid = as.at('TaskUID').text.to_i
       assigned_task = tasks.detect { |task| task.uid == task_uid }
       next unless assigned_task
-      assigned_task.assigned_to = resource_by_user[resource_id]
+      assigned_task.assigned_to = resource_by_user[resource_id] unless resource_id == Importxml::NOT_USER_ASSIGNED
 	  if assigned_task.work.blank?
 		 assigned_task.work = as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
 	  else	

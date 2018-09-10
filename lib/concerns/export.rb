@@ -138,7 +138,8 @@ module Concerns::Export
         xml.Assignments {
 		 
           source_issues = @query ? @query_issues : @project.issues
-          source_issues.select { |issue| issue.assigned_to_id? && issue.leaf? }.each do |issue|
+		  # If Resource not allocated then assign the task to default resource
+          source_issues.select { |issue|  issue.leaf? }.each do |issue|  # issue.assigned_to_id? &&
             @uid += 1	
 			units = 1			
 			hook_duration = call_hook(:module_export_get_duration, { :struct => issue})
@@ -152,7 +153,7 @@ module Concerns::Export
               end
               xml.UID @uid
               xml.TaskUID @task_id_to_uid[issue.id]
-              xml.ResourceUID @resource_id_to_uid[issue.assigned_to_id]
+              xml.ResourceUID issue.assigned_to_id? ? @resource_id_to_uid[issue.assigned_to_id] : 0
               xml.PercentWorkComplete issue.done_ratio #unless ignore_field?('done_ratio', 'export')
               xml.Units units #1
               unless issue.total_spent_hours.zero?

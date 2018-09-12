@@ -11,6 +11,7 @@ ActionDispatch::Callbacks.to_prepare do
   IssueRelation.__send__(:include, IssueRelationPatch)
   Redmine::NestedSet::Traversing.__send__(:include, TraversingPatch)
   Redmine::Views::OtherFormatsBuilder.__send__(:include, LoaderOtherFormatsBuilder)
+  Redmine::Utils::DateCalculation.__send__(:include, DateCalculationPatch)
 end
 
 Redmine::Plugin.register :redmine_loader do

@@ -143,7 +143,7 @@ module Concerns::Export
             @uid += 1	
 			units = 1			
 			hook_duration = call_hook(:module_export_get_duration, { :struct => issue})
-			units = (issue.estimated_hours / hook_duration[0]) unless hook_duration.blank?
+			units = (issue.estimated_hours / hook_duration[0]) unless hook_duration.blank? || hook_duration[0].blank? || hook_duration[0] == 0
             xml.Assignment {
               unless !issue.leaf? #ignore_field?('estimated_hours', 'export') && 
                 time = get_scorm_time(issue.estimated_hours)
@@ -224,13 +224,13 @@ module Concerns::Export
 	hook_constraint_date = call_hook(:module_export_get_constraint_date, { :struct => struct})
 	hook_task_type = call_hook(:module_export_get_task_type, { :struct => struct})
 	hook_duration = call_hook(:module_export_get_duration, { :struct => struct})
-	duration = get_scorm_time(hook_duration[0]) unless hook_duration.blank?
+	duration = get_scorm_time(hook_duration[0]) unless hook_duration.blank? || hook_duration[0].blank?
 	
     xml.Task {
       xml.UID @uid
       xml.ID id.next
       xml.Name(struct.subject)
-	  xml.Type hook_task_type.blank? ? 0 : hook_task_type[0] 
+	  xml.Type hook_task_type.blank? || hook_task_type[0].blank? ? 0 : hook_task_type[0] 
       xml.Notes(struct.description) #unless ignore_field?('description', 'export')
       xml.Active 1
       xml.IsNull 0
@@ -239,7 +239,7 @@ module Concerns::Export
       xml.Priority struct.priority_id #(ignore_field?('priority', 'export') ? 500 : struct.priority_id)
       start_date = struct.issue.next_working_date(struct.start_date || struct.created_on.to_date)
 	  hook_start = call_hook(:module_export_get_task_start_time, { :struct => struct})
-	  start_date = hook_start[0] unless hook_start.blank?
+	  start_date = hook_start[0] unless hook_start.blank? || hook_start[0].blank?
       xml.Start start_date.to_time.to_s(:ms_xml)
       finish_date = if struct.due_date
                       # if struct.issue.next_working_date(struct.due_date).day == start_date.day
@@ -252,7 +252,7 @@ module Concerns::Export
                       start_date.next
                     end
 	  hook_finish = call_hook(:module_export_get_task_finish_time, { :struct => struct})
-	  finish_date = hook_finish[0] unless hook_finish.blank?
+	  finish_date = hook_finish[0] unless hook_finish.blank? || hook_finish[0].blank?
       xml.Finish finish_date.to_time.to_s(:ms_xml)
       xml.ManualStart start_date.to_time.to_s(:ms_xml)
       xml.ManualFinish finish_date.to_time.to_s(:ms_xml)
@@ -269,8 +269,8 @@ module Concerns::Export
       xml.ActualWork get_scorm_time(struct.total_spent_hours)
       xml.Milestone 0
       xml.FixedCostAccrual 3
-      xml.ConstraintType hook_constraint_type.blank? ? 0 : hook_constraint_type[0] #2 Default is as soon as possible in projectlibre so change to zero
-      xml.ConstraintDate hook_constraint_date.blank? ? start_date.to_time.to_s(:ms_xml) : hook_constraint_date[0].to_time.to_s(:ms_xml)
+      xml.ConstraintType hook_constraint_type.blank? || hook_constraint_type[0].blank? ? 0 : hook_constraint_type[0] #2 Default is as soon as possible in projectlibre so change to zero
+      xml.ConstraintDate hook_constraint_date.blank? || hook_constraint_date[0].blank? ? start_date.to_time.to_s(:ms_xml) : hook_constraint_date[0].to_time.to_s(:ms_xml)
       xml.IgnoreResourceCalendar 0
       parent = struct.leaf? ? 0 : 1
       xml.Summary(parent)
@@ -296,7 +296,7 @@ module Concerns::Export
 			xml.Type 1
 			delay = relation.delay
 			hook_delay = call_hook(:module_export_get_actual_delay, { :relation => relation})
-			delay = hook_delay[0] unless hook_delay.blank?
+			delay = hook_delay[0] unless hook_delay.blank? || hook_delay[0].blank?
 			if delay > 0 && relation.issue_from.due_date != relation.issue_to.start_date
 				xml.LinkLag (delay * 4800).to_i
 				xml.LagFormat 7

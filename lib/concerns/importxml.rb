@@ -8,7 +8,7 @@ module Concerns::Importxml
       fields = %w(tid subject status_id level outlinenumber code estimated_hours start_date due_date priority done_ratio predecessors delays assigned_to parent_id description milestone tracker_id is_private uid cf_text1 cf_text2 cf_text3 cf_text4 cf_number1 cf_number2 cf_number3 cf_date1 cf_date2 cf_date3) #spent_hours
 	  
 	  hook_task_attr = call_hook(:module_get_additional_attr) 
-	  fields = fields + hook_task_attr[0] unless hook_task_attr.blank?
+	  fields = fields + hook_task_attr[0] unless hook_task_attr.blank? || hook_task_attr[0].blank?
 
       fields.each do |field| # fields - @ignore_fields['import']
         eval("struct.#{field} = task[:#{field}]#{".try(:split, ', ')" if field.in?(%w(predecessors delays))}")

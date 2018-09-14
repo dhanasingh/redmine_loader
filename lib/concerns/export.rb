@@ -302,7 +302,8 @@ module Concerns::Export
 			delay = relation.delay
 			hook_delay = call_hook(:module_export_get_actual_delay, { :relation => relation})
 			delay = hook_delay[0] unless hook_delay.blank? || hook_delay[0].blank?
-			if  delay != 0 && relation.issue_from.due_date != relation.issue_to.start_date #delay > 0
+			# -1 delay not export because of this condition. Start date and due date of predecessor are same when there is a -1 delay 
+			if  delay != 0   #&& relation.issue_from.due_date != relation.issue_to.start_date #delay > 0
 				xml.LinkLag (delay * 4800).to_i
 				xml.LagFormat 7
 			end

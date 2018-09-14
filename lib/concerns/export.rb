@@ -293,11 +293,16 @@ module Concerns::Export
               xml.CrossProject 1
               xml.CrossProjectName relation.issue_from.project.name
             end
-			xml.Type 1
+			
+			relation_type = 1
+			hook_relation_type = call_hook(:module_export_get_relation_type, { :relation => relation})
+			relation_type = hook_relation_type[0] unless hook_relation_type.blank? || hook_relation_type[0].blank?
+			xml.Type relation_type
+			
 			delay = relation.delay
 			hook_delay = call_hook(:module_export_get_actual_delay, { :relation => relation})
 			delay = hook_delay[0] unless hook_delay.blank? || hook_delay[0].blank?
-			if delay > 0 && relation.issue_from.due_date != relation.issue_to.start_date
+			if  delay != 0 && relation.issue_from.due_date != relation.issue_to.start_date #delay > 0
 				xml.LinkLag (delay * 4800).to_i
 				xml.LagFormat 7
 			end

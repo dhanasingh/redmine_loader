@@ -200,7 +200,7 @@ class Importxml
 				calcDelay = loder_helper.working_days(parentTask.due_date.to_date, source_issue.start_date.to_date)
 				relation.delay = calcDelay - 1
 				# Set the delay of the relation if it exists.
-				if source_issue.try { |e| e.delays[index].to_i > 0 }
+				if source_issue.try { |e| e.delays[index].to_i } # > 0 - commented this check because set the delay even it is negative 
 					actualDelay = (source_issue.delays[index].to_i)/4800.0
 					
 					# if !parent.try(:due_date).blank? && loder_helper.working_days(parentTask.due_date.to_date, source_issue.start_date.to_date) - actualDelay == 0.0
@@ -212,7 +212,7 @@ class Importxml
 				end
 			  end
 			  
-			  Redmine::Hook.call_hook(:importxml_before_save_issue_relation, { :relation => relation, :actual_delay => actualDelay })			  
+			  Redmine::Hook.call_hook(:importxml_before_save_issue_relation, { :relation => relation, :actual_delay => actualDelay, :source_issue => source_issue, :index => index })			  
               relation.save			  
             end
           end

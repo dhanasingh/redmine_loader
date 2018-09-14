@@ -9,9 +9,11 @@ module Concerns::Importxml
 	  
 	  hook_task_attr = call_hook(:module_get_additional_attr) 
 	  fields = fields + hook_task_attr[0] unless hook_task_attr.blank? || hook_task_attr[0].blank?
-
+	  multi_val_attr = %w(predecessors delays)
+	  hook_multi_val_attr = call_hook(:module_get_multi_val_attr) 
+	  multi_val_attr = multi_val_attr + hook_multi_val_attr[0] unless hook_multi_val_attr.blank? || hook_multi_val_attr[0].blank?
       fields.each do |field| # fields - @ignore_fields['import']
-        eval("struct.#{field} = task[:#{field}]#{".try(:split, ', ')" if field.in?(%w(predecessors delays))}")
+        eval("struct.#{field} = task[:#{field}]#{".try(:split, ', ')" if field.in?(multi_val_attr)}") #(%w(predecessors delays))
       end
       struct.status_id ||= IssueStatus.default
       struct.done_ratio ||= 0

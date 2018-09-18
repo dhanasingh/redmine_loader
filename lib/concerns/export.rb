@@ -140,33 +140,19 @@ module Concerns::Export
           source_issues = @query ? @query_issues : @project.issues
 		  # If Resource not allocated then assign the task to default resource
           source_issues.select { |issue|  issue.leaf? }.each do |issue|  # issue.assigned_to_id? &&
-            @uid += 1	
+		    hook_assignments = call_hook(:module_export_get_assignments, { :source_issues => issue})
 			units = 1			
 			hook_duration = call_hook(:module_export_get_duration, { :struct => issue})
 			units = (issue.estimated_hours / hook_duration[0]) unless hook_duration.blank? || hook_duration[0].blank? || hook_duration[0] == 0
-            xml.Assignment {
-              unless !issue.leaf? #ignore_field?('estimated_hours', 'export') && 
-                time = get_scorm_time(issue.estimated_hours)
-                xml.Work time
-                xml.RegularWork time
-                xml.RemainingWork time
-              end
-              xml.UID @uid
-              xml.TaskUID @task_id_to_uid[issue.id]
-              xml.ResourceUID issue.assigned_to_id? ? @resource_id_to_uid[issue.assigned_to_id] : 0
-              xml.PercentWorkComplete issue.done_ratio #unless ignore_field?('done_ratio', 'export')
-              xml.Units units #1
-              unless issue.total_spent_hours.zero?
-                xml.TimephasedData {
-                  xml.Type 2
-                  xml.UID @uid
-                  xml.Unit 2
-                  xml.Value get_scorm_time(issue.total_spent_hours)
-                  xml.Start (issue.start_date || issue.created_on).to_time.to_s(:ms_xml)
-                  xml.Finish ((issue.start_date || issue.created_on).to_time + (issue.total_spent_hours.to_i).hours).to_s(:ms_xml)
-                }
-              end
-            }
+			if hook_assignments[0].blank?	
+				@uid += 1
+				write_assignment(xml, issue, @uid, issue.estimated_hours, @task_id_to_uid[issue.id], @resource_id_to_uid[issue.assigned_to_id], units)
+			else 
+				hook_assignments[0].each do |assignments|
+					@uid = @uid + 1
+					write_assignment(xml, issue, @uid, assignments.work, @task_id_to_uid[issue.id], @resource_id_to_uid[assignments.user_id], assignments.units)
+				end 
+			end
           end
         }
       }
@@ -174,6 +160,32 @@ module Concerns::Export
 
     filename = "#{@project.name}-#{Time.now.strftime("%Y-%m-%d-%H-%M")}.xml"
     return export.to_xml, filename
+  end
+  
+  def write_assignment(xml, issue, uid, work, taskUid, resourceUid, units)
+	xml.Assignment {
+		unless !issue.leaf? #ignore_field?('estimated_hours', 'export') && 
+			time = get_scorm_time(work)
+			xml.Work time
+			xml.RegularWork time
+			xml.RemainingWork time
+		end
+		xml.UID uid
+		xml.TaskUID taskUid
+		xml.ResourceUID resourceUid #issue.assigned_to_id? ? @resource_id_to_uid[issue.assigned_to_id] : 0
+		xml.PercentWorkComplete issue.done_ratio #unless ignore_field?('done_ratio', 'export')
+		xml.Units units #1
+		unless issue.total_spent_hours.zero?
+			xml.TimephasedData {
+				xml.Type 2
+				xml.UID uid
+				xml.Unit 2
+				xml.Value get_scorm_time(issue.total_spent_hours)
+				xml.Start (issue.start_date || issue.created_on).to_time.to_s(:ms_xml)
+				xml.Finish ((issue.start_date || issue.created_on).to_time + (issue.total_spent_hours.to_i).hours).to_s(:ms_xml)
+			}
+		end
+	}  
   end
 
   def determine_nesting(issues, versions_count)

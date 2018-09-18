@@ -108,12 +108,14 @@ module Concerns::Importxml
       assigned_task = tasks.detect { |task| task.uid == task_uid }
       next unless assigned_task
       assigned_task.assigned_to = resource_by_user[resource_id] unless resource_id == Importxml::NOT_USER_ASSIGNED
+	  allocated_work = as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':')}
 	  if assigned_task.work.blank?
-		 assigned_task.work = as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
+		 assigned_task.work = allocated_work #as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
 	  else	
-		work = as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') } 
-		assigned_task.work = get_scorm_time((assigned_task.work.try(:to_hours)) + (work.try(:to_hours))).try{ |e| e.delete("PT").split(/H|M|S/)[0...-1].join(':') }
+		# work = as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') } 
+		assigned_task.work = get_scorm_time((assigned_task.work.try(:to_hours)) + (allocated_work.try(:to_hours))).try{ |e| e.delete("PT").split(/H|M|S/)[0...-1].join(':') }
 	  end
+	  call_hook(:module_set_additional_task_assignment_attr, { :assigned_task => assigned_task, :assignment => as, :user_id => resource_by_user[resource_id] })
     end
   end
   

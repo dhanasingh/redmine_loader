@@ -109,6 +109,7 @@ module Concerns::Importxml
       next unless assigned_task
       assigned_task.assigned_to = resource_by_user[resource_id] unless resource_id == Importxml::NOT_USER_ASSIGNED
 	  allocated_work = as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':')}
+	  allocated_work = get_scorm_time(nil).try{ |e| e.delete("PT").split(/H|M|S/)[0...-1].join(':')} if allocated_work.blank?
 	  if assigned_task.work.blank?
 		 assigned_task.work = allocated_work #as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
 	  else	

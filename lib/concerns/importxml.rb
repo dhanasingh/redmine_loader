@@ -71,7 +71,7 @@ module Concerns::Importxml
         struct.description = task.value_at('Notes', :strip)
         struct.predecessors = task.xpath('PredecessorLink').map { |predecessor| predecessor.value_at('PredecessorUID', :to_i) }
         struct.delays = task.xpath('PredecessorLink').map { |predecessor| predecessor.value_at('LinkLag', :to_i) }
-		call_hook(:module_add_additional_attr_from_xml, { :struct => struct, :task => task })
+		call_hook(:module_add_additional_attr_from_xml, { :struct => struct, :task => task, :ea_field_hash => eaFieldHash, :main_assignee_field => settings['loader_main_assignee'] })
 		unless settings['loader_percent_complete_attr'].blank?
 			doneRatio = task.xpath("ExtendedAttribute[FieldID='#{eaFieldHash["#{settings['loader_percent_complete_attr']}"]}']/Value").try(:text)
 			struct.done_ratio = doneRatio unless doneRatio.blank?
@@ -92,21 +92,25 @@ module Concerns::Importxml
 
     tasks = tasks.compact.uniq.sort_by(&:uid)
 
-    set_assignment_to_task(doc, tasks)
+    set_assignment_to_task(doc, tasks, settings)
     logger.debug "DEBUG: Tasks: #{tasks.inspect}"
     logger.debug "DEBUG: END get_tasks_from_xml"
     return tasks
   end
 
 
-  def set_assignment_to_task(doc, tasks)
+  def set_assignment_to_task(doc, tasks, settings)
     resource_by_user = get_bind_resource_users(doc)
+	resources = get_resources(doc)
+	task_assignee_hash = Hash.new
     doc.xpath('Project/Assignments/Assignment').each do |as|
       resource_id = as.at('ResourceUID').text.to_i
       #next if resource_id == Importxml::NOT_USER_ASSIGNED
       task_uid = as.at('TaskUID').text.to_i
       assigned_task = tasks.detect { |task| task.uid == task_uid }
       next unless assigned_task
+	  task_assignee_hash[assigned_task.uid] = Array.new if task_assignee_hash[assigned_task.uid].blank?
+	  task_assignee_hash[assigned_task.uid] << resource_id
       assigned_task.assigned_to = resource_by_user[resource_id] unless resource_id == Importxml::NOT_USER_ASSIGNED
 	  allocated_work = as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':')}
 	  allocated_work = get_scorm_time(nil).try{ |e| e.delete("PT").split(/H|M|S/)[0...-1].join(':')} if allocated_work.blank?
@@ -116,7 +120,10 @@ module Concerns::Importxml
 		# work = as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') } 
 		assigned_task.work = get_scorm_time((assigned_task.work.try(:to_hours)) + (allocated_work.try(:to_hours))).try{ |e| e.delete("PT").split(/H|M|S/)[0...-1].join(':') }
 	  end
+	  
 	  call_hook(:module_set_additional_task_assignment_attr, { :assigned_task => assigned_task, :assignment => as, :user_id => resource_by_user[resource_id] })
+	  
+	  call_hook(:module_set_main_assignee, { :assigned_task => assigned_task, :resources => resources, :resource_by_user => resource_by_user, :task_assignee_hash => task_assignee_hash})  
     end
   end
   

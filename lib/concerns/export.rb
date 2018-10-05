@@ -150,7 +150,7 @@ module Concerns::Export
 			else 
 				hook_assignments[0].each do |assignments|
 					@uid = @uid + 1
-					write_assignment(xml, issue, @uid, assignments.work, @task_id_to_uid[issue.id], @resource_id_to_uid[assignments.user_id], assignments.units)
+					write_assignment(xml, issue, @uid, assignments.work, @task_id_to_uid[issue.id], @resource_id_to_uid[assignments.user_id], assignments.units, assignments)
 				end 
 			end
           end
@@ -162,19 +162,31 @@ module Concerns::Export
     return export.to_xml, filename
   end
   
-  def write_assignment(xml, issue, uid, work, taskUid, resourceUid, units)
+  def write_assignment(xml, issue, uid, work, taskUid, resourceUid, units, assignments=nil) 
 	xml.Assignment {
 		unless !issue.leaf? #ignore_field?('estimated_hours', 'export') && 
 			time = get_scorm_time(work)
 			xml.Work time
 			xml.RegularWork time
-			xml.RemainingWork time
+			#xml.RemainingWork time
 		end
 		xml.UID uid
 		xml.TaskUID taskUid
 		xml.ResourceUID resourceUid.blank? ? 0 : resourceUid #issue.assigned_to_id? ? @resource_id_to_uid[issue.assigned_to_id] : 0
 		xml.PercentWorkComplete issue.done_ratio #unless ignore_field?('done_ratio', 'export')
 		xml.Units units #1
+		unless assignments.blank?
+			xml.Start assignments.start_date.try(:to_time).to_s(:ms_xml)
+			xml.Finish assignments.finish_date.try(:to_time).to_s(:ms_xml)
+			xml.Stop assignments.stop_date.try(:to_time).to_s(:ms_xml)
+			xml.Resume assignments.resume_date.try(:to_time).to_s(:ms_xml)
+			xml.HasFixedRateUnits assignments.has_fixed_rate_units.blank? ? 1 : assignments.has_fixed_rate_units
+			xml.FixedMaterial assignments.fixed_material.blank? ? 0 : assignments.fixed_material
+			xml.RemainingWork get_scorm_time(assignments.remaining_work)
+			xml.WorkContour assignments.work_contour
+			xml.Delay assignments.assignment_delay unless assignments.assignment_delay.blank?
+			
+		end		
 		unless issue.total_spent_hours.zero?
 			xml.TimephasedData {
 				xml.Type 2

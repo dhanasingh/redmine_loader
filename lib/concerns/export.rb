@@ -178,8 +178,8 @@ module Concerns::Export
 		unless assignments.blank?
 			xml.Start assignments.start_date.try(:to_time).to_s(:ms_xml)
 			xml.Finish assignments.finish_date.try(:to_time).to_s(:ms_xml)
-			xml.Stop assignments.stop_date.try(:to_time).to_s(:ms_xml)
-			xml.Resume assignments.resume_date.try(:to_time).to_s(:ms_xml)
+			xml.Stop assignments.stop_date.try(:to_time).to_s(:ms_xml) unless assignments.stop_date.blank?
+			xml.Resume assignments.resume_date.try(:to_time).to_s(:ms_xml) unless assignments.resume_date.blank?
 			xml.HasFixedRateUnits assignments.has_fixed_rate_units.blank? ? 1 : assignments.has_fixed_rate_units
 			xml.FixedMaterial assignments.fixed_material.blank? ? 0 : assignments.fixed_material
 			xml.RemainingWork get_scorm_time(assignments.remaining_work)

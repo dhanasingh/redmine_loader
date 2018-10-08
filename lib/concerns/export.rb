@@ -40,6 +40,12 @@ module Concerns::Export
 				xml.FieldName @settings['loader_percent_complete_attr']
 			}
 		  end
+		  unless @settings['loader_main_assignee'].blank?
+			xml.ExtendedAttribute {
+				xml.FieldID exAttrCfHash[@settings['loader_main_assignee']]
+				xml.FieldName @settings['loader_main_assignee']
+			}
+		  end
 		  getMappedAttrCF.each do |attr, cfId|
 				xml.ExtendedAttribute {
 				xml.FieldID exAttrCfHash[attr]
@@ -350,6 +356,12 @@ module Concerns::Export
 		  xml.ExtendedAttribute {
 			xml.FieldID exAttrCfHash[@settings['loader_percent_complete_attr']]
 			xml.Value struct.done_ratio #unless ignore_field?('done_ratio', 'export')
+		  }
+	  end
+	  unless @settings['loader_main_assignee'].blank?
+		  xml.ExtendedAttribute {
+			xml.FieldID exAttrCfHash[@settings['loader_main_assignee']]
+			xml.Value struct.assigned_to.try(:login) 
 		  }
 	  end
 	  getMappedAttrCF.each do |attr, cfId|

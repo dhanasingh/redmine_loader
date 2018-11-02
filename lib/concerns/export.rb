@@ -182,15 +182,15 @@ module Concerns::Export
 		xml.PercentWorkComplete issue.done_ratio #unless ignore_field?('done_ratio', 'export')
 		xml.Units units #1
 		unless assignments.blank?
-			xml.Start assignments.start_date.try(:to_time).to_s(:ms_xml)
-			xml.Finish assignments.finish_date.try(:to_time).to_s(:ms_xml)
+			xml.Start issue.start_date.try(:to_time).to_s(:ms_xml) unless issue.start_date.blank?
+			xml.Finish issue.due_date.try(:to_time).to_s(:ms_xml) unless issue.due_date.blank?
 			xml.Stop assignments.stop_date.try(:to_time).to_s(:ms_xml) unless assignments.stop_date.blank?
 			xml.Resume assignments.resume_date.try(:to_time).to_s(:ms_xml) unless assignments.resume_date.blank?
 			xml.HasFixedRateUnits assignments.has_fixed_rate_units.blank? ? 1 : assignments.has_fixed_rate_units
 			xml.FixedMaterial assignments.fixed_material.blank? ? 0 : assignments.fixed_material
 			xml.RemainingWork get_scorm_time(assignments.remaining_work)
 			xml.WorkContour assignments.work_contour
-			xml.Delay assignments.assignment_delay unless assignments.assignment_delay.blank?
+			xml.Delay assignments.assignment_delay.to_i unless assignments.assignment_delay.blank?
 			
 		end		
 		unless issue.total_spent_hours.zero?

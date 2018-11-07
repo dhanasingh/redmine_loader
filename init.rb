@@ -18,7 +18,7 @@ Redmine::Plugin.register :redmine_loader do
 
   author 'Simon Stearn, Andrew Hodgkinsons'
 
-  desc = 'MS Project/Redmine sync plugin Build9'
+  desc = 'MS Project/Redmine sync plugin Build10'
   name desc
   description desc
 

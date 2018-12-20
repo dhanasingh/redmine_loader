@@ -55,5 +55,6 @@
   </td>
   <td>
     <%= h(task.predecessors.join(', ')) %>
-  </td>
+  </td>  
+  <%= call_hook(:view_analyze_form_task_row_fields, :task => task, :index => index) %>
 </tr>

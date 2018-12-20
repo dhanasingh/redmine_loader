@@ -40,6 +40,12 @@ module Concerns::Export
 				xml.FieldName @settings['loader_percent_complete_attr']
 			}
 		  end
+		  unless @settings['loader_main_assignee'].blank?
+			xml.ExtendedAttribute {
+				xml.FieldID exAttrCfHash[@settings['loader_main_assignee']]
+				xml.FieldName @settings['loader_main_assignee']
+			}
+		  end
 		  getMappedAttrCF.each do |attr, cfId|
 				xml.ExtendedAttribute {
 				xml.FieldID exAttrCfHash[attr]
@@ -136,32 +142,23 @@ module Concerns::Export
           end
         }
         xml.Assignments {
+		 
           source_issues = @query ? @query_issues : @project.issues
-          source_issues.select { |issue| issue.assigned_to_id? && issue.leaf? }.each do |issue|
-            @uid += 1
-            xml.Assignment {
-              unless !issue.leaf? #ignore_field?('estimated_hours', 'export') && 
-                time = get_scorm_time(issue.estimated_hours)
-                xml.Work time
-                xml.RegularWork time
-                xml.RemainingWork time
-              end
-              xml.UID @uid
-              xml.TaskUID @task_id_to_uid[issue.id]
-              xml.ResourceUID @resource_id_to_uid[issue.assigned_to_id]
-              xml.PercentWorkComplete issue.done_ratio #unless ignore_field?('done_ratio', 'export')
-              xml.Units 1
-              unless issue.total_spent_hours.zero?
-                xml.TimephasedData {
-                  xml.Type 2
-                  xml.UID @uid
-                  xml.Unit 2
-                  xml.Value get_scorm_time(issue.total_spent_hours)
-                  xml.Start (issue.start_date || issue.created_on).to_time.to_s(:ms_xml)
-                  xml.Finish ((issue.start_date || issue.created_on).to_time + (issue.total_spent_hours.to_i).hours).to_s(:ms_xml)
-                }
-              end
-            }
+		  # If Resource not allocated then assign the task to default resource
+          source_issues.each do |issue|  # issue.assigned_to_id? && .select { |issue|  issue.leaf? }
+		    hook_assignments = call_hook(:module_export_get_assignments, { :source_issues => issue})
+			units = 1			
+			hook_duration = call_hook(:module_export_get_duration, { :struct => issue})
+			units = (issue.estimated_hours / hook_duration[0]) unless hook_duration.blank? || hook_duration[0].blank? || hook_duration[0] == 0 || issue.estimated_hours.blank?
+			if hook_assignments[0].blank?	
+				@uid += 1
+				write_assignment(xml, issue, @uid, issue.estimated_hours, @task_id_to_uid[issue.id], @resource_id_to_uid[issue.assigned_to_id], units)
+			else 
+				hook_assignments[0].each do |assignments|
+					@uid = @uid + 1
+					write_assignment(xml, issue, @uid, assignments.work, @task_id_to_uid[issue.id], @resource_id_to_uid[assignments.user_id], assignments.units, assignments)
+				end 
+			end
           end
         }
       }
@@ -169,6 +166,44 @@ module Concerns::Export
 
     filename = "#{@project.name}-#{Time.now.strftime("%Y-%m-%d-%H-%M")}.xml"
     return export.to_xml, filename
+  end
+  
+  def write_assignment(xml, issue, uid, work, taskUid, resourceUid, units, assignments=nil) 
+	xml.Assignment {
+		unless !issue.leaf? #ignore_field?('estimated_hours', 'export') && 
+			time = get_scorm_time(work)
+			xml.Work time
+			xml.RegularWork time
+			#xml.RemainingWork time
+		end
+		xml.UID uid
+		xml.TaskUID taskUid
+		xml.ResourceUID resourceUid.blank? ? 0 : resourceUid #issue.assigned_to_id? ? @resource_id_to_uid[issue.assigned_to_id] : 0
+		xml.PercentWorkComplete issue.done_ratio #unless ignore_field?('done_ratio', 'export')
+		xml.Units units #1
+		unless assignments.blank?
+			xml.Start issue.start_date.try(:to_time).to_s(:ms_xml) unless issue.start_date.blank?
+			xml.Finish issue.due_date.try(:to_time).to_s(:ms_xml) unless issue.due_date.blank?
+			xml.Stop assignments.stop_date.try(:to_time).to_s(:ms_xml) unless assignments.stop_date.blank?
+			xml.Resume assignments.resume_date.try(:to_time).to_s(:ms_xml) unless assignments.resume_date.blank?
+			xml.HasFixedRateUnits assignments.has_fixed_rate_units.blank? ? 1 : assignments.has_fixed_rate_units
+			xml.FixedMaterial assignments.fixed_material.blank? ? 0 : assignments.fixed_material
+			xml.RemainingWork get_scorm_time(assignments.remaining_work)
+			xml.WorkContour assignments.work_contour
+			xml.Delay assignments.assignment_delay.to_i unless assignments.assignment_delay.blank?
+			
+		end		
+		unless issue.total_spent_hours.zero?
+			xml.TimephasedData {
+				xml.Type 2
+				xml.UID uid
+				xml.Unit 2
+				xml.Value get_scorm_time(issue.total_spent_hours)
+				xml.Start (issue.start_date || issue.created_on).to_time.to_s(:ms_xml)
+				xml.Finish ((issue.start_date || issue.created_on).to_time + (issue.total_spent_hours.to_i).hours).to_s(:ms_xml)
+			}
+		end
+	}  
   end
 
   def determine_nesting(issues, versions_count)
@@ -213,10 +248,19 @@ module Concerns::Export
 	exAttrCfHash = getExtentedAttrFieldId
     @uid += 1
     @task_id_to_uid[struct.id] = @uid
+    time = get_scorm_time(struct.estimated_hours)
+	duration = time
+	hook_constraint_type = call_hook(:module_export_get_constraint_type, { :struct => struct})
+	hook_constraint_date = call_hook(:module_export_get_constraint_date, { :struct => struct})
+	hook_task_type = call_hook(:module_export_get_task_type, { :struct => struct})
+	hook_duration = call_hook(:module_export_get_duration, { :struct => struct})
+	duration = get_scorm_time(hook_duration[0]) unless hook_duration.blank? || hook_duration[0].blank?
+	
     xml.Task {
       xml.UID @uid
       xml.ID id.next
       xml.Name(struct.subject)
+	  xml.Type hook_task_type.blank? || hook_task_type[0].blank? ? 0 : hook_task_type[0] 
       xml.Notes(struct.description) #unless ignore_field?('description', 'export')
       xml.Active 1
       xml.IsNull 0
@@ -224,6 +268,8 @@ module Concerns::Export
       xml.HyperlinkAddress issue_url(struct.issue)
       xml.Priority struct.priority_id #(ignore_field?('priority', 'export') ? 500 : struct.priority_id)
       start_date = struct.issue.next_working_date(struct.start_date || struct.created_on.to_date)
+	  hook_start = call_hook(:module_export_get_task_start_time, { :struct => struct})
+	  start_date = hook_start[0] unless hook_start.blank? || hook_start[0].blank?
       xml.Start start_date.to_time.to_s(:ms_xml)
       finish_date = if struct.due_date
                       # if struct.issue.next_working_date(struct.due_date).day == start_date.day
@@ -235,6 +281,8 @@ module Concerns::Export
                     else
                       start_date.next
                     end
+	  hook_finish = call_hook(:module_export_get_task_finish_time, { :struct => struct})
+	  finish_date = hook_finish[0] unless hook_finish.blank? || hook_finish[0].blank?
       xml.Finish finish_date.to_time.to_s(:ms_xml)
       xml.ManualStart start_date.to_time.to_s(:ms_xml)
       xml.ManualFinish finish_date.to_time.to_s(:ms_xml)
@@ -242,9 +290,8 @@ module Concerns::Export
       xml.EarlyFinish finish_date.to_time.to_s(:ms_xml)
       xml.LateStart start_date.to_time.to_s(:ms_xml)
       xml.LateFinish finish_date.to_time.to_s(:ms_xml)
-      time = get_scorm_time(struct.estimated_hours)
       xml.Work time
-      xml.Duration time
+      xml.Duration duration #get_scorm_time(hook_duration[0])  #time
       #xml.ManualDuration time
       #xml.RemainingDuration time
       #xml.RemainingWork time
@@ -252,8 +299,8 @@ module Concerns::Export
       xml.ActualWork get_scorm_time(struct.total_spent_hours)
       xml.Milestone 0
       xml.FixedCostAccrual 3
-      xml.ConstraintType 0 #2 Default is as soon as possible in projectlibre so change to zero
-      xml.ConstraintDate start_date.to_time.to_s(:ms_xml)
+      xml.ConstraintType hook_constraint_type.blank? || hook_constraint_type[0].blank? ? 0 : hook_constraint_type[0] #2 Default is as soon as possible in projectlibre so change to zero
+      xml.ConstraintDate hook_constraint_date.blank? || hook_constraint_date[0].blank? ? start_date.to_time.to_s(:ms_xml) : hook_constraint_date[0].to_time.to_s(:ms_xml)
       xml.IgnoreResourceCalendar 0
       parent = struct.leaf? ? 0 : 1
       xml.Summary(parent)
@@ -276,9 +323,18 @@ module Concerns::Export
               xml.CrossProject 1
               xml.CrossProjectName relation.issue_from.project.name
             end
-			xml.Type 1
-			if relation.delay > 0 && relation.issue_from.due_date != relation.issue_to.start_date
-				xml.LinkLag (relation.delay * 4800)
+			
+			relation_type = 1
+			hook_relation_type = call_hook(:module_export_get_relation_type, { :relation => relation})
+			relation_type = hook_relation_type[0] unless hook_relation_type.blank? || hook_relation_type[0].blank?
+			xml.Type relation_type
+			
+			delay = relation.delay
+			hook_delay = call_hook(:module_export_get_actual_delay, { :relation => relation})
+			delay = hook_delay[0] unless hook_delay.blank? || hook_delay[0].blank?
+			# -1 delay not export because of this condition. Start date and due date of predecessor are same when there is a -1 delay 
+			if  delay != 0   #&& relation.issue_from.due_date != relation.issue_to.start_date #delay > 0
+				xml.LinkLag (delay * 4800).to_i
 				xml.LagFormat 7
 			end
           }
@@ -300,6 +356,12 @@ module Concerns::Export
 		  xml.ExtendedAttribute {
 			xml.FieldID exAttrCfHash[@settings['loader_percent_complete_attr']]
 			xml.Value struct.done_ratio #unless ignore_field?('done_ratio', 'export')
+		  }
+	  end
+	  unless @settings['loader_main_assignee'].blank?
+		  xml.ExtendedAttribute {
+			xml.FieldID exAttrCfHash[@settings['loader_main_assignee']]
+			xml.Value struct.assigned_to.try(:login) 
 		  }
 	  end
 	  getMappedAttrCF.each do |attr, cfId|

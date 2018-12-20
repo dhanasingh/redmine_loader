@@ -11,17 +11,18 @@ ActionDispatch::Callbacks.to_prepare do
   IssueRelation.__send__(:include, IssueRelationPatch)
   Redmine::NestedSet::Traversing.__send__(:include, TraversingPatch)
   Redmine::Views::OtherFormatsBuilder.__send__(:include, LoaderOtherFormatsBuilder)
+  Redmine::Utils::DateCalculation.__send__(:include, DateCalculationPatch)
 end
 
 Redmine::Plugin.register :redmine_loader do
 
   author 'Simon Stearn, Andrew Hodgkinsons'
 
-  desc = 'MS Project/Redmine sync plugin'
+  desc = 'MS Project/Redmine sync plugin Build14'
   name desc
   description desc
 
-  version '0.3b'
+  version '0.4'
 
   requires_redmine version_or_higher: '2.3.0'
 

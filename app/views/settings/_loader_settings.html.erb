@@ -17,6 +17,10 @@
 		<label><%= l(:label_ex_attr_percent_complete) %> </label>
 		<%=h select_tag('settings[loader_percent_complete_attr]', options_for_select(loader_helper.getExtentedAttr('Number'), :selected =>  @settings['loader_percent_complete_attr'])) %>
   </p>
+  <p>
+	<label><%= l(:label_ex_attr_main_assignee) %> </label>
+	<%=h select_tag('settings[loader_main_assignee]', options_for_select(loader_helper.getExtentedAttr('Text'), :selected =>  @settings['loader_main_assignee'])) %>
+</p>
 <%= content_tag :fieldset, class: 'box' do %>
   <%= content_tag :legend, t('.custom_mapping') %>
     <%= content_tag :fieldset, class: 'box' do %>

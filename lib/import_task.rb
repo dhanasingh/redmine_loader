@@ -1,4 +1,4 @@
-class ImportTask < Struct.new(:assigned_to,
+class ImportTask < Struct.new(*([:assigned_to,
 						:cf_text1,
 						:cf_text2,
 						:cf_text3,
@@ -31,5 +31,6 @@ class ImportTask < Struct.new(:assigned_to,
                         :subject,
                         :tracker_id,
                         :tracker_name,
-                        :uid)
+                        :uid] + ((Redmine::Hook.call_hook(:struct_import_task_attributes)).blank? ? [] : Redmine::Hook.call_hook(:struct_import_task_attributes)[0] )
+						))
 end

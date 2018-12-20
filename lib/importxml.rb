@@ -58,7 +58,10 @@ class Importxml
 		  eaCfHash.each do |attr, cfId|
 			cfValues[cfId] =  source_issue[attr]
 		  end
+		 
 		  issue.custom_field_values = cfValues
+		  Redmine::Hook.call_hook(:importxml_before_save_issue, { :issue => issue, :source_issue => source_issue })
+		  
           if issue.save!
             puts "DEBUG: Issue #{issue.subject} imported"
 
@@ -178,6 +181,8 @@ class Importxml
           if uid_to_issue_id.has_key?(parent_uid)
             # If the issue is not a milestone we have to create the issue relation
             IssueRelation.new do |relation|
+			  actualDelay = 0
+			  calcDelay = 0
               relation.issue_from_id = uid_to_issue_id[parent_uid]
               relation.issue_to_id = uid_to_issue_id[source_issue.uid]
               relation.relation_type = 'precedes'
@@ -188,20 +193,20 @@ class Importxml
 			  #source_issue.start_date.to_date == parent.try(:due_date) || source_issue.start_date.to_date == parentTask.due_date.to_date
 				relation.delay = -1
 			  else
+				# Diffrence between task start and it's predessor end will save as delay in redmine.
+				# Redmine give the predessor end + 1 as task start date
+				# Because of this behavior start date varied from the task start date in the xml
+				
+				calcDelay = loder_helper.working_days(parentTask.due_date.to_date, source_issue.start_date.to_date)
+				relation.delay = calcDelay - 1
 				# Set the delay of the relation if it exists.
-				if source_issue.try { |e| e.delays[index].to_i > 0 }
-					actualDelay = (source_issue.delays[index].to_i)/4800
-					
-					if !parent.try(:due_date).blank? && loder_helper.working_days(parentTask.due_date.to_date, source_issue.start_date.to_date) - actualDelay == 0.0
-						relation.delay = actualDelay - 1 #(source_issue.delays[index].to_i)/4800
-					else
-						relation.delay = actualDelay
-					end
-					#delaynumber = delaynumber + 1
-				end
+				
 			  end
-             
-              relation.save
+			  if source_issue.try { |e| e.delays[index].to_i } # > 0 - commented this check because set the delay even it is negative 
+				actualDelay = (source_issue.delays[index].to_i)/4800.0
+			  end
+			  Redmine::Hook.call_hook(:importxml_before_save_issue_relation, { :relation => relation, :actual_delay => actualDelay, :source_issue => source_issue, :index => index })			  
+              relation.save			  
             end
           end
         end

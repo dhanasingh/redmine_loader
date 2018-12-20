@@ -11,10 +11,12 @@ module Concerns::Importxml
 	  fields = fields + hook_task_attr[0] unless hook_task_attr.blank? || hook_task_attr[0].blank?
 	  multi_val_attr = %w(predecessors delays)
 	  hook_multi_val_attr = call_hook(:module_get_multi_val_attr) 
+	  hook_nested_entities = call_hook(:module_get_nested_entities)
 	  multi_val_attr = multi_val_attr + hook_multi_val_attr[0] unless hook_multi_val_attr.blank? || hook_multi_val_attr[0].blank?
       fields.each do |field| # fields - @ignore_fields['import']
-        eval("struct.#{field} = task[:#{field}]#{".try(:split, ', ')" if field.in?(multi_val_attr)}") #(%w(predecessors delays))
+        eval("struct.#{field} = task[:#{field}]#{".try(:split, ', ')" if field.in?(multi_val_attr)}") unless field.in?(hook_nested_entities)#(%w(predecessors delays))
       end
+	  call_hook(:module_add_nested_entities_to_tasks, { :struct => struct, :task => task })
       struct.status_id ||= IssueStatus.default
       struct.done_ratio ||= 0
       tasks_to_import[index.to_i] = struct

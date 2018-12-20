@@ -18,6 +18,7 @@ module Concerns::Export
         xml.Title @project.name + addRevision
 		xml.Name @project.name + addRevision
 		xml.ScheduleFromStart 1
+		xml.DurationFormat 7
         xml.ExtendedAttributes {
           xml.ExtendedAttribute {
             xml.FieldID 188744000
@@ -70,12 +71,12 @@ module Concerns::Export
                     xml.DayWorking 1
                     xml.WorkingTimes {
                       xml.WorkingTime {
-                        xml.FromTime '09:00:00'
-                        xml.ToTime '13:00:00'
+                        xml.FromTime '08:00:00'
+                        xml.ToTime '12:00:00'
                       }
                       xml.WorkingTime {
-                        xml.FromTime '14:00:00'
-                        xml.ToTime '18:00:00'
+                        xml.FromTime '13:00:00'
+                        xml.ToTime '17:00:00'
                       }
                     }
                   end
@@ -182,8 +183,8 @@ module Concerns::Export
 		xml.PercentWorkComplete issue.done_ratio #unless ignore_field?('done_ratio', 'export')
 		xml.Units units #1
 		unless assignments.blank?
-			xml.Start issue.start_date.try(:to_time).to_s(:ms_xml) unless issue.start_date.blank?
-			xml.Finish issue.due_date.try(:to_time).to_s(:ms_xml) unless issue.due_date.blank?
+			xml.Start assignments.start_date.try(:to_time).to_s(:ms_xml) unless assignments.start_date.blank?
+			xml.Finish assignments.finish_date.try(:to_time).to_s(:ms_xml) unless assignments.finish_date.blank?
 			xml.Stop assignments.stop_date.try(:to_time).to_s(:ms_xml) unless assignments.stop_date.blank?
 			xml.Resume assignments.resume_date.try(:to_time).to_s(:ms_xml) unless assignments.resume_date.blank?
 			xml.HasFixedRateUnits assignments.has_fixed_rate_units.blank? ? 1 : assignments.has_fixed_rate_units
@@ -192,16 +193,30 @@ module Concerns::Export
 			xml.WorkContour assignments.work_contour
 			xml.Delay assignments.assignment_delay.to_i unless assignments.assignment_delay.blank?
 			
-		end		
-		unless issue.total_spent_hours.zero?
-			xml.TimephasedData {
-				xml.Type 2
-				xml.UID uid
-				xml.Unit 2
-				xml.Value get_scorm_time(issue.total_spent_hours)
-				xml.Start (issue.start_date || issue.created_on).to_time.to_s(:ms_xml)
-				xml.Finish ((issue.start_date || issue.created_on).to_time + (issue.total_spent_hours.to_i).hours).to_s(:ms_xml)
-			}
+		end	
+		hook_assignment_days = call_hook(:module_export_get_assignment_days, { :source_issues => issue, :assignment => assignments})
+		if hook_assignment_days.blank? || hook_assignment_days[0].blank?
+			# unless issue.total_spent_hours.zero?
+				# xml.TimephasedData {
+					# xml.Type 2
+					# xml.UID uid
+					# xml.Unit 2
+					# xml.Value get_scorm_time(issue.total_spent_hours)
+					# xml.Start (issue.start_date || issue.created_on).to_time.to_s(:ms_xml)
+					# xml.Finish ((issue.start_date || issue.created_on).to_time + (issue.total_spent_hours.to_i).hours).to_s(:ms_xml)
+				# }
+			# end
+		else
+			hook_assignment_days[0].each do |assign_day|
+					xml.TimephasedData {
+					xml.Type assign_day.day_type.blank? ? 2 : assign_day.day_type
+					xml.UID uid
+					xml.Unit assign_day.unit.blank? ? 2 : assign_day.unit
+					xml.Value get_scorm_time(assign_day.day_value.blank? ? 0 : assign_day.day_value)
+					xml.Start assign_day.start.to_time.to_s(:ms_xml) #(issue.start_date || issue.created_on).to_time.to_s(:ms_xml)
+					xml.Finish assign_day.finish.to_time.to_s(:ms_xml) #((issue.start_date || issue.created_on).to_time + (issue.total_spent_hours.to_i).hours).to_s(:ms_xml)
+				}
+			end 
 		end
 	}  
   end

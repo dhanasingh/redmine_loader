@@ -68,7 +68,8 @@ module Concerns::Importxml
         struct.priority = issuePriorityHash[priority_id].blank? ? default_priority : priority_id #task.at('Priority').try(:text)
         struct.tracker_name = task.xpath("ExtendedAttribute[FieldID='#{tracker_field}']/Value").try(:text)
         struct.tid = task.xpath("ExtendedAttribute[FieldID='#{issue_rid}']/Value").try(:text).try(:to_i)
-        struct.estimated_hours = task.at('Duration').try{ |e| get_time_str(e.text)}#e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') } #if struct.milestone.try(:zero?)
+        struct.estimated_hours = task.at('Duration').try{ |e| get_time_str(e.text)}
+		#e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') } #if struct.milestone.try(:zero?)
         struct.done_ratio = get_percent_complete(task).round(-1)
         struct.description = task.value_at('Notes', :strip)
         struct.predecessors = task.xpath('PredecessorLink').map { |predecessor| predecessor.value_at('PredecessorUID', :to_i) }
@@ -136,6 +137,10 @@ module Concerns::Importxml
     time = time.to_s.split('.')
     hours = time.first.to_i
     minutes = time.last.to_i == 0 ? 0 : (60 * "0.#{time.last}".to_f).to_i
+	if minutes > 59
+		hours +=1 
+		minutes = 0
+	end	
     return "PT#{hours}H#{minutes}M0S"
   end
   

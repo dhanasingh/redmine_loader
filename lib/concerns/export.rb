@@ -255,7 +255,11 @@ module Concerns::Export
     return 'PT0H0M0S' if time.nil? #|| time.zero?
     time = time.to_s.split('.')
     hours = time.first.to_i
-    minutes = time.last.to_i == 0 ? 0 : (60 * "0.#{time.last}".to_f).to_i
+    minutes = time.last.to_i == 0 ? 0 : (60 * "0.#{time.last}".to_f).round(0).to_i
+	if minutes > 59
+		hours +=1 
+		minutes = 0
+	end
     return "PT#{hours}H#{minutes}M0S"
   end
 

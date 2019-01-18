@@ -68,7 +68,7 @@ module Concerns::Importxml
         struct.priority = issuePriorityHash[priority_id].blank? ? default_priority : priority_id #task.at('Priority').try(:text)
         struct.tracker_name = task.xpath("ExtendedAttribute[FieldID='#{tracker_field}']/Value").try(:text)
         struct.tid = task.xpath("ExtendedAttribute[FieldID='#{issue_rid}']/Value").try(:text).try(:to_i)
-        struct.estimated_hours = task.at('Duration').try{ |e| get_time_str(e.text)}
+        struct.estimated_hours = get_time_decimal(task.at('Duration').try{ |e| get_time_with_sec_str(e.text)})
 		#e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') } #if struct.milestone.try(:zero?)
         struct.done_ratio = get_percent_complete(task).round(-1)
         struct.description = task.value_at('Notes', :strip)
@@ -115,33 +115,20 @@ module Concerns::Importxml
 	  task_assignee_hash[assigned_task.uid] = Array.new if task_assignee_hash[assigned_task.uid].blank?
 	  task_assignee_hash[assigned_task.uid] << resource_id
       assigned_task.assigned_to = resource_by_user[resource_id] unless resource_id == Importxml::NOT_USER_ASSIGNED
-	  allocated_work = as.at('Work').try{ |e| get_time_str(e.text)}#e.text.delete("PT").split(/H|M|S/)[0...-1].join(':')}
-	  allocated_work = get_scorm_time(nil).try{ |e| get_time_str(e)} if allocated_work.blank? 
-	  # e.delete("PT").split(/H|M|S/)[0...-1].join(':')}
+	  allocated_work = as.at('Work').try{ |e| get_time_with_sec_str(e.text)}
+	  allocated_work = ('PT0H0M0S').try{ |e| get_time_with_sec_str(e)} if allocated_work.blank? 
+	  allocated_work = get_time_decimal(allocated_work)
+	  
 	  if assigned_task.work.blank?
-		 assigned_task.work = allocated_work #as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') }
+		assigned_task.work = allocated_work 
 	  else	
-		# work = as.at('Work').try{ |e| e.text.delete("PT").split(/H|M|S/)[0...-1].join(':') } 
-		assigned_task.work = get_scorm_time((assigned_task.work.try(:to_hours)) + (allocated_work.try(:to_hours))).try{ |e| get_time_str(e)} # e.delete("PT").split(/H|M|S/)[0...-1].join(':') }
+		assigned_task.work = assigned_task.work + allocated_work
 	  end
 	  
 	  call_hook(:module_set_additional_task_assignment_attr, { :assigned_task => assigned_task, :assignment => as, :user_id => resource_by_user[resource_id] })
 	  
 	  call_hook(:module_set_main_assignee, { :assigned_task => assigned_task, :resources => resources, :resource_by_user => resource_by_user, :task_assignee_hash => task_assignee_hash})  
     end
-  end
-  
-  def get_scorm_time time
-	# Return zero work as zero because milestone have 0 hours
-    return 'PT0H0M0S' if time.nil? #|| time.zero?
-    time = time.to_s.split('.')
-    hours = time.first.to_i
-    minutes = time.last.to_i == 0 ? 0 : (60 * "0.#{time.last}".to_f).to_i
-	if minutes > 59
-		hours +=1 
-		minutes = 0
-	end	
-    return "PT#{hours}H#{minutes}M0S"
   end
   
   def get_percent_complete(task)  
@@ -191,15 +178,20 @@ module Concerns::Importxml
   end
   
   def get_time_str(xml_time)
-		timeArr = xml_time.delete("PT").split(/H|M|S/) #[0...0].join(':')
-	    if timeArr.last.try(:to_i) > 0
-			if timeArr.second.try(:to_i)+1 > 59
-				timeArr[0] = (timeArr[0].try(:to_i) + 1).to_s
-				timeArr[1] = 0
-			else
-				timeArr[1] = (timeArr.second.try(:to_i) + 1).to_s
-			end
-		end
-		timeArr[0...-1].join(':')
-	end
+		
+	xml_time.delete("PT").split(/H|M|S/) [0...-1].join(':')
+
+  end
+	
+  def get_time_with_sec_str(xml_time)
+  
+	xml_time.delete("PT").split(/H|M|S/).join(':')
+	
+  end
+
+  def get_time_decimal(time)
+	 time = time.split(":")
+	 time = (time[0...-1].join(':')).try(:to_hours) + ((time[2]).to_f/3600)
+	 time
+  end  
 end

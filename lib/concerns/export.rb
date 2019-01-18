@@ -253,14 +253,19 @@ module Concerns::Export
   def get_scorm_time time
 	# Return zero work as zero because milestone have 0 hours
     return 'PT0H0M0S' if time.nil? #|| time.zero?
-    time = time.to_s.split('.')
-    hours = time.first.to_i
-    minutes = time.last.to_i == 0 ? 0 : (60 * "0.#{time.last}".to_f).round(0).to_i
-	if minutes > 59
-		hours +=1 
-		minutes = 0
+    hours = time.to_i
+    minutes = (time - hours) * 60
+	seconds = ((minutes - minutes.to_i) * 60).round(0).to_i
+	minutes = minutes.to_i
+	if seconds > 59
+		seconds = 0
+		minutes += 1
+		if minutes > 59
+			minutes = 0
+			hours += 1
+		end
 	end
-    return "PT#{hours}H#{minutes}M0S"
+    return "PT#{hours}H#{minutes}M#{seconds}S"
   end
 
   def write_task(xml, struct, id)

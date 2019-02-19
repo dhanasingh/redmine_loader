@@ -26,69 +26,67 @@ class LoaderController < ApplicationController
 
   def analyze
     begin
-	  @attachedFile =  saveAttachments(params[:attachments])
-	  xmlfile = nil
-      xmlfile = @attachedFile.diskfile unless @attachedFile.blank? #params[:import][:xmlfile].try(:tempfile)
-      if !@attachedFile.blank? && !xmlfile.blank? && valid_extension?(@attachedFile.filename) &&  @settings['loader_project_cf'].to_i != 0 
-        @import = Importxml.new
-        #byte = xmlfile.getc
-        #xmlfile.rewind
+     
+      xmlfile = params[:import][:xmlfile].try(:tempfile)
+      @original_filename = params[:import][:xmlfile].try(:original_filename)
 
-        #xmlfile = Zlib::GzipReader.new xmlfile unless byte == '<'[0]
-        File.open(@attachedFile.diskfile, 'r') do |readxml|
+      msg = ""
+      if xmlfile.blank?
+        msg = l(:choose_file_warning)
+      elsif !valid_extension?(@original_filename)
+        msg = l(:label_file_extension)
+      elsif @settings['loader_project_cf'].to_i == 0
+        msg = l(:label_revision_configure)
+      end
+      flash[:error] = msg if !msg.blank?
+
+      if !xmlfile.blank? && @settings['loader_project_cf'].to_i != 0 && flash[:error].blank?
+
+        @xmlfile = File.path(xmlfile)
+        @import = Importxml.new
+        
+        File.open(xmlfile, 'r') do |readxml|
           @import.hashed_name = (File.basename(xmlfile, File.extname(xmlfile)) + Time.now.to_s).hash.abs
           xmldoc = Nokogiri::XML::Document.parse(readxml).remove_namespaces!
-		  validRevision = validateRevision(xmldoc)
-		  unless validRevision
-			raise l(:label_revision_error)
-		  end
+          validRevision = validateRevision(xmldoc)
+          unless validRevision
+            raise l(:label_revision_error)
+          end
           @import.tasks = get_tasks_from_xml(xmldoc)
         end
         subjects = @import.tasks.map(&:subject)
-        @duplicates = Array.new #subjects.select{ |subj| subjects.count(subj) > 1 }.uniq
-		@project.save
+        @duplicates = Array.new
+		    @project.save
         flash[:notice] = l(:tasks_read_successfully)
-      else
-		if @attachedFile.blank?
-			msg = l(:choose_file_warning)
-	    elsif !valid_extension?(@attachedFile.filename)
-			msg = l(:label_file_extension)
-		elsif @settings['loader_project_cf'].to_i == 0
-			msg = l(:label_revision_configure)
-		else 
-			msg = l(:choose_file_warning)
-		end
-		destroyAttachements(@attachedFile.id) unless @attachedFile.blank?
-        flash[:error] = msg
       end
-    rescue => error
-	  destroyAttachements(@attachedFile.id) unless @attachedFile.blank?
-	  logger.error "Exception occurs #{error.message}"
-	  logger.error "Exception backtrace #{error.backtrace}"
+      rescue => error
+      logger.error "Exception occurs #{error.message}"
+      logger.error "Exception backtrace #{error.backtrace}"
       lines = error.message.split("\n")
       flash[:error] = l(:failed_read) + lines.to_s
     end
     redirect_to new_project_loader_path if flash[:error]
   end
   
-  def saveAttachments(attachments)
-	attachment = nil
-	unless attachments.blank?
-		attachments.each do |attachment_param|
-			attachment = Attachment.find_by_token(attachment_param[1][:token])
-			unless attachment.blank?
-				attachment.container_type = @project.class.name
-				attachment.container_id = @project.id
-				attachment.filename = Time.now.to_s + attachment.filename
-				attachment.description = attachment_param[1][:description]
-				attachment.save
-			end
-		end
-	end
-	attachment
+  def saveAttachments(attachedfile)
+
+    filePath = attachedfile[:xmlfile]
+    fileName = attachedfile[:original_filename]
+    unless fileName.blank? || filePath.blank?
+      attachment = Attachment.new(:file => File.read(filePath))
+      attachment.author = User.current
+      attachment.filename = Time.now.to_s + fileName.to_s
+      attachment.content_type = "text/xml"
+      attachment.container_type = @project.class.name
+      attachment.container_id = @project.id
+      attachment.save
+    end
   end
 
   def create
+    if !@settings['import']['ignore_fields']['attach_imported_files'].blank? && !@settings['import']['ignore_fields']['attach_imported_files'].to_i == 0
+     saveAttachments(params)
+    end
     default_tracker_id = @settings['import']['tracker_id']
     tasks_per_time = @settings['import']['instant_import_tasks'].to_i
     import_versions = @settings['import']['sync_versions'] == '1'
@@ -108,7 +106,6 @@ class LoaderController < ApplicationController
     import_name = params[:hashed_name]
 
     if flash[:error]
-	  destroyAttachements(params[:attachment_id])
       redirect_to new_project_loader_path # interrupt if any errors
       return
     end
@@ -124,7 +121,7 @@ class LoaderController < ApplicationController
         Importxml.map_subtasks_and_parents(issues_info, @project.id, nil, uid_to_issue_id, outlinenumber_to_issue_id)
         Importxml.map_versions_and_relations(milestones, issues, @project.id, nil, import_versions, uid_to_issue_id, uid_to_version_id)
 
-		saveRevision
+		    saveRevision()
         flash[:notice] = l(:imported_successfully) + issues.count.to_s
         redirect_to project_issues_path(@project)
         return
@@ -144,11 +141,10 @@ class LoaderController < ApplicationController
         Mailer.delay(queue: import_name, priority: 5).notify_about_import(user, @project, date, issues_info) # send notification that import finished
 
         Importxml.delay(queue: import_name, priority: 10).clean_up(import_name)
-		saveRevision
+		    saveRevision()
         flash[:notice] = t(:your_tasks_being_imported)
       end
     rescue => error
-	  destroyAttachements(params[:attachment_id])
       flash[:error] = l(:unable_import) + error.to_s
       logger.debug "DEBUG: Unable to import tasks: #{ error }"
 	  logger.error "Exception occurs #{error.message}"
@@ -161,10 +157,6 @@ class LoaderController < ApplicationController
   def export
     xml, name = generate_xml
     send_data xml, filename: name, disposition: :attachment
-  end
-  
-  def destroyAttachements(attachementId)
-	attachmentObj = Attachment.find(attachementId.to_i).destroy unless attachementId.blank?	
   end
   
   def valid_extension?(filename)
@@ -205,31 +197,28 @@ class LoaderController < ApplicationController
   end
   
   def validateRevision(xmldoc)
-	isValidateRevision = false
-	begin
-		projectName = xmldoc.xpath('Project').at('Name').text.strip
-		projectNameArray = projectName.split('|')
-		revisionValue = @project.custom_field_value(@settings['loader_project_cf'])	
-		revsionStr = projectNameArray.last
-		nameArray =  revsionStr.split('-')
-		if revisionValue.blank? && nameArray[0].strip != 'Rev'		
-			isValidateRevision = true
-		elsif  nameArray[0].strip == 'Rev' && (revisionValue.to_f == nameArray[1].strip.to_f)
-			isValidateRevision = true
-		end	
-	rescue Exception => e
-		raise e.message 
-	end
-	isValidateRevision
+    isValidateRevision = false
+    begin
+      projectName = xmldoc.xpath('Project').at('Name').text.strip
+      projectNameArray = projectName.split('|')
+      revisionValue = @project.custom_field_value(@settings['loader_project_cf'])	
+      revsionStr = projectNameArray.last
+      nameArray =  revsionStr.split('-')
+      if revisionValue.blank? && nameArray[0].strip != 'Rev'		
+        isValidateRevision = true
+      elsif  nameArray[0].strip == 'Rev' && (revisionValue.to_f == nameArray[1].strip.to_f)
+        isValidateRevision = true
+      end	
+    rescue Exception => e
+      raise e.message 
+    end
+    isValidateRevision
   end
   
   def saveRevision
-	revisionValue = @project.custom_field_value(@settings['loader_project_cf'])
-	newRevisionValue = revisionValue.blank? ? 1 : (revisionValue.to_i + 1)
-	@project.custom_field_values = {@settings['loader_project_cf'].to_s => newRevisionValue.to_s}
-	@project.save
-	if @settings['import']['ignore_fields']['attach_imported_files'].blank? || @settings['import']['ignore_fields']['attach_imported_files'].to_i == 0 
-		destroyAttachements(params[:attachment_id])
-	end
+    revisionValue = @project.custom_field_value(@settings['loader_project_cf'])
+    newRevisionValue = revisionValue.blank? ? 1 : (revisionValue.to_i + 1)
+    @project.custom_field_values = {@settings['loader_project_cf'].to_s => newRevisionValue.to_s}
+    @project.save
   end	
 end

@@ -9,7 +9,6 @@ class LoaderController < ApplicationController
 
   include Concerns::Importxml
   include Concerns::Export
-  include Concerns::Importxml
   include QueriesHelper
   include SortHelper
   
@@ -84,7 +83,7 @@ class LoaderController < ApplicationController
   end
 
   def create
-    if !@settings['import']['ignore_fields']['attach_imported_files'].blank? && !@settings['import']['ignore_fields']['attach_imported_files'].to_i == 0
+    if @settings['import']['ignore_fields']['attach_imported_files'].to_i == 1
      saveAttachments(params)
     end
     default_tracker_id = @settings['import']['tracker_id']

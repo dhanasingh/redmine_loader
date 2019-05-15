@@ -26,11 +26,11 @@ class LoaderController < ApplicationController
   def analyze
     begin
      
-      xmlfile = params[:import][:xmlfile].try(:tempfile)
+      @xmlfile = params[:import][:xmlfile].try(:tempfile)
       @original_filename = params[:import][:xmlfile].try(:original_filename)
 
       msg = ""
-      if xmlfile.blank?
+      if @xmlfile.blank?
         msg = l(:choose_file_warning)
       elsif !valid_extension?(@original_filename)
         msg = l(:label_file_extension)
@@ -39,13 +39,20 @@ class LoaderController < ApplicationController
       end
       flash[:error] = msg if !msg.blank?
 
-      if !xmlfile.blank? && @settings['loader_project_cf'].to_i != 0 && flash[:error].blank?
+      if !@xmlfile.blank? && @settings['loader_project_cf'].to_i != 0 && flash[:error].blank?
 
-        @xmlfile = File.path(xmlfile)
+        @xmlfile = File.path(@xmlfile)
+        backupFileName = File.basename(@xmlfile)
+        my_dir = Dir[@xmlfile]
+        copiedFile_folder = "#{Rails.root}/tmp/imports/#{backupFileName}"
+        my_dir.each do |filename|
+          FileUtils.cp(filename, copiedFile_folder)
+        end
+        @xmlfile = File.join(copiedFile_folder)
         @import = Importxml.new
-        
-        File.open(xmlfile, 'r') do |readxml|
-          @import.hashed_name = (File.basename(xmlfile, File.extname(xmlfile)) + Time.now.to_s).hash.abs
+
+        File.open(@xmlfile, 'r') do |readxml|
+          @import.hashed_name = (File.basename(@xmlfile, File.extname(@xmlfile)) + Time.now.to_s).hash.abs
           xmldoc = Nokogiri::XML::Document.parse(readxml).remove_namespaces!
           validRevision = validateRevision(xmldoc)
           unless validRevision
@@ -71,7 +78,7 @@ class LoaderController < ApplicationController
 
     filePath = attachedfile[:xmlfile]
     fileName = attachedfile[:original_filename]
-    unless fileName.blank? || filePath.blank?
+    if !fileName.blank? && !filePath.blank? && File.exist?(filePath)
       attachment = Attachment.new(:file => File.read(filePath))
       attachment.author = User.current
       attachment.filename = Time.now.to_s + fileName.to_s
@@ -83,9 +90,6 @@ class LoaderController < ApplicationController
   end
 
   def create
-    if @settings['import']['ignore_fields']['attach_imported_files'].to_i == 1
-     saveAttachments(params)
-    end
     default_tracker_id = @settings['import']['tracker_id']
     tasks_per_time = @settings['import']['instant_import_tasks'].to_i
     import_versions = @settings['import']['sync_versions'] == '1'
@@ -104,52 +108,57 @@ class LoaderController < ApplicationController
     flash[:error] = l(:no_valid_default_tracker) unless default_tracker_id
     import_name = params[:hashed_name]
 
-    if flash[:error]
-      redirect_to new_project_loader_path # interrupt if any errors
-      return
-    end
+    unless flash[:error].blank?
+      # Right, good to go! Do the import.
+      begin
+        milestones = tasks_to_import.select { |task| task.milestone == '1' }
+        issues = import_versions ? tasks_to_import - milestones : tasks_to_import
+        issues_info = tasks_to_import.map { |issue| {title: issue.subject, uid: issue.uid, outlinenumber: issue.outlinenumber, predecessors: issue.predecessors} }
 
-    # Right, good to go! Do the import.
-    begin
-      milestones = tasks_to_import.select { |task| task.milestone == '1' }
-      issues = import_versions ? tasks_to_import - milestones : tasks_to_import
-      issues_info = tasks_to_import.map { |issue| {title: issue.subject, uid: issue.uid, outlinenumber: issue.outlinenumber, predecessors: issue.predecessors} }
+        if tasks_to_import.size <= tasks_per_time
+          uid_to_issue_id, outlinenumber_to_issue_id, uid_to_version_id = Importxml.import_tasks(tasks_to_import, @project.id, user, nil, update_existing, import_versions)
+          Importxml.map_subtasks_and_parents(issues_info, @project.id, nil, uid_to_issue_id, outlinenumber_to_issue_id)
+          Importxml.map_versions_and_relations(milestones, issues, @project.id, nil, import_versions, uid_to_issue_id, uid_to_version_id)
 
-      if tasks_to_import.size <= tasks_per_time
-        uid_to_issue_id, outlinenumber_to_issue_id, uid_to_version_id = Importxml.import_tasks(tasks_to_import, @project.id, user, nil, update_existing, import_versions)
-        Importxml.map_subtasks_and_parents(issues_info, @project.id, nil, uid_to_issue_id, outlinenumber_to_issue_id)
-        Importxml.map_versions_and_relations(milestones, issues, @project.id, nil, import_versions, uid_to_issue_id, uid_to_version_id)
+          if @settings['import']['ignore_fields']['attach_imported_files'].to_i == 1
+            saveAttachments(params)
+          end
+          File.delete(params[:xmlfile]) if File.exist?(params[:xmlfile])
+          saveRevision()
+          flash[:notice] = l(:imported_successfully) + issues.count.to_s
+          redirect_to project_issues_path(@project)
+          return
+        else
+          tasks_to_import.each_slice(tasks_per_time).each do |batch|
+            Importxml.delay(queue: import_name, priority: 1).import_tasks(batch, @project.id, user, import_name, update_existing, import_versions)
+          end
 
-		    saveRevision()
-        flash[:notice] = l(:imported_successfully) + issues.count.to_s
-        redirect_to project_issues_path(@project)
-        return
-      else
-        tasks_to_import.each_slice(tasks_per_time).each do |batch|
-          Importxml.delay(queue: import_name, priority: 1).import_tasks(batch, @project.id, user, import_name, update_existing, import_versions)
+          issues_info.each_slice(50).each do |batch|
+            Importxml.delay(queue: import_name, priority: 3).map_subtasks_and_parents(batch, @project.id, import_name)
+          end
+
+          issues.each_slice(tasks_per_time).each do |batch|
+            Importxml.delay(queue: import_name, priority: 4).map_versions_and_relations(milestones, batch, @project.id, import_name, import_versions)
+          end
+
+          Mailer.delay(queue: import_name, priority: 5).notify_about_import(user, @project, date, issues_info) # send notification that import finished
+
+          Importxml.delay(queue: import_name, priority: 10).clean_up(import_name)          
+          if @settings['import']['ignore_fields']['attach_imported_files'].to_i == 1
+            saveAttachments(params)
+          end
+          saveRevision()
+          flash[:notice] = t(:your_tasks_being_imported)
         end
-
-        issues_info.each_slice(50).each do |batch|
-          Importxml.delay(queue: import_name, priority: 3).map_subtasks_and_parents(batch, @project.id, import_name)
-        end
-
-        issues.each_slice(tasks_per_time).each do |batch|
-          Importxml.delay(queue: import_name, priority: 4).map_versions_and_relations(milestones, batch, @project.id, import_name, import_versions)
-        end
-
-        Mailer.delay(queue: import_name, priority: 5).notify_about_import(user, @project, date, issues_info) # send notification that import finished
-
-        Importxml.delay(queue: import_name, priority: 10).clean_up(import_name)
-		    saveRevision()
-        flash[:notice] = t(:your_tasks_being_imported)
+        
+      rescue => error
+        flash[:error] = l(:unable_import) + error.to_s
+        logger.debug "DEBUG: Unable to import tasks: #{ error }"
+        logger.error "Exception occurs #{error.message}"
+        logger.error "Exception backtrace #{error.backtrace}"
       end
-    rescue => error
-      flash[:error] = l(:unable_import) + error.to_s
-      logger.debug "DEBUG: Unable to import tasks: #{ error }"
-	  logger.error "Exception occurs #{error.message}"
-	  logger.error "Exception backtrace #{error.backtrace}"
     end
-
+    File.delete(params[:xmlfile]) if File.exist?(params[:xmlfile])
     redirect_to new_project_loader_path
   end
 

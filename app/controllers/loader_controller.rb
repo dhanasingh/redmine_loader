@@ -108,7 +108,7 @@ class LoaderController < ApplicationController
     flash[:error] = l(:no_valid_default_tracker) unless default_tracker_id
     import_name = params[:hashed_name]
 
-    unless flash[:error].blank?
+    if flash[:error].blank?
       # Right, good to go! Do the import.
       begin
         milestones = tasks_to_import.select { |task| task.milestone == '1' }

@@ -2,10 +2,10 @@ class LoaderController < ApplicationController
 
   unloadable
 
-  before_filter :find_project, :get_plugin_settings, only: [:analyze, :new, :create, :export]
-  before_filter :authorize, except: :analyze
-  before_filter :get_import_settings, only: [:analyze, :create]
-  before_filter :get_export_settings, only: :export
+  before_action :find_project, :get_plugin_settings, only: [:analyze, :new, :create, :export]
+  before_action :authorize, except: :analyze
+  before_action :get_import_settings, only: [:analyze, :create]
+  before_action :get_export_settings, only: :export
 
   include Concerns::Importxml
   include Concerns::Export

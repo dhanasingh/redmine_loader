@@ -4,7 +4,8 @@ module IssueRelationPatch
 	
     base.class_eval do
 	  include Redmine::Utils::DateCalculation
-      alias_method_chain :successor_soonest_start, :working_days
+      alias_method :successor_soonest_start_without_working_days, :successor_soonest_start
+      alias_method :successor_soonest_start, :successor_soonest_start_with_working_days
     end
   end
 

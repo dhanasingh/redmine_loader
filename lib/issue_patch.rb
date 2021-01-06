@@ -2,7 +2,8 @@ module IssuePatch
   def self.included(base)
     base.send(:include, InstanceMethods)
     base.class_eval do
-      alias_method_chain :send_notification, :aware_of_import
+      alias_method :send_notification_without_aware_of_import, :send_notification
+      alias_method :send_notification, :send_notification_with_aware_of_import
     end
   end
 

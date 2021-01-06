@@ -4,7 +4,7 @@ require_dependency 'string'
 require_dependency 'element'
 require_dependency 'views_issues_index_bottom_hook'
 
-ActionDispatch::Callbacks.to_prepare do
+ActiveSupport::Reloader.to_prepare do
   SettingsHelper.__send__(:include, SettingsHelperPatch)
   Mailer.__send__(:include, LoaderMailer)
   Issue.__send__(:include, IssuePatch)

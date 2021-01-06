@@ -35,7 +35,7 @@ class Importxml
     Issue.transaction do
 	  # Delete all the relations off the issues that we are going to import. If they continue existing we are going to create them. If not they must be deleted.
 	  to_import.each do |source_issue|
-		IssueRelation.delete_all(["issue_to_id = ?", source_issue.tid])
+		IssueRelation.where("issue_to_id = ?", source_issue.tid).delete_all
 	  end
       to_import.each do |source_issue|
         unless source_issue.milestone.to_i == 1 && sync_versions

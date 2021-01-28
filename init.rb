@@ -18,11 +18,11 @@ Redmine::Plugin.register :redmine_loader do
 
   author 'Simon Stearn, Andrew Hodgkinsons'
 
-  desc = 'MS Project/Redmine sync plugin Build18'
+  desc = 'MS Project/Redmine sync plugin Build19'
   name desc
   description desc
 
-  version '0.4'
+  version '0.5'
 
   requires_redmine version_or_higher: '2.3.0'
 

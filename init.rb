@@ -1,8 +1,8 @@
 require 'redmine'
 
-require_dependency 'string'
-require_dependency 'element'
-require_dependency 'views_issues_index_bottom_hook'
+# require_dependency 'string'
+# require_dependency 'element'
+# require_dependency 'views_issues_index_bottom_hook'
 
 ActiveSupport::Reloader.to_prepare do
   SettingsHelper.__send__(:include, SettingsHelperPatch)
@@ -63,7 +63,7 @@ Redmine::Plugin.register :redmine_loader do
 
   menu :project_menu, :loader, { controller: :loader, action: :new },
     caption: :menu_caption, param: :project_id
-	
+
 
   Time::DATE_FORMATS.merge!(
     ms_xml: lambda{ |time| time.strftime("%Y-%m-%dT%H:%M:%S") }

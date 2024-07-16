@@ -1,5 +1,5 @@
 module Nokogiri
-  module XML
+  module Xml
     class Element
       def value_at(field_name, *options)
         at(field_name).try(:text).try(:send, *options)

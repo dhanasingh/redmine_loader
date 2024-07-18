@@ -1,18 +1,15 @@
-require 'redmine'
+require File.dirname(__FILE__) + '/../../lib/redmine'
+require File.dirname(__FILE__) + '/lib/string'
+require File.dirname(__FILE__) + '/lib/Nokogiri/Xml/element'
+require File.dirname(__FILE__) + '/lib/views_issues_index_bottom_hook'
 
-ActiveSupport::Reloader.to_prepare do
-  require_dependency 'string'
-  require_dependency 'element'
-  require_dependency 'views_issues_index_bottom_hook'
-end
-
-SettingsHelper.send(:include, SettingsHelperPatch)
-Mailer.send(:include, LoaderMailer)
-Issue.send(:include, IssuePatch)
-IssueRelation.send(:include, IssueRelationPatch)
-Redmine::NestedSet::Traversing.send(:include, TraversingPatch)
-Redmine::Views::OtherFormatsBuilder.send(:include, LoaderOtherFormatsBuilder)
-Redmine::Utils::DateCalculation.send(:include, DateCalculationPatch)
+SettingsHelper.__send__(:include, SettingsHelperPatch)
+Mailer.__send__(:include, LoaderMailer)
+Issue.__send__(:include, IssuePatch)
+IssueRelation.__send__(:include, IssueRelationPatch)
+Redmine::NestedSet::Traversing.__send__(:include, TraversingPatch)
+Redmine::Views::OtherFormatsBuilder.__send__(:include, LoaderOtherFormatsBuilder)
+Redmine::Utils::DateCalculation.__send__(:include, DateCalculationPatch)
 
 Redmine::Plugin.register :redmine_loader do
 

@@ -1,7 +1,19 @@
-require File.dirname(__FILE__) + '/../../lib/redmine'
-require File.dirname(__FILE__) + '/lib/string'
-require File.dirname(__FILE__) + '/lib/Nokogiri/Xml/element'
-require File.dirname(__FILE__) + '/lib/views_issues_index_bottom_hook'
+Rails.application.config.to_prepare do
+  require 'redmine'
+  require 'nokogiri'
+  require_relative 'lib/string'
+  require_relative 'lib/views_issues_index_bottom_hook'
+end
+
+module Nokogiri
+  module XML
+    class Element
+      def value_at(field_name, *options)
+        at(field_name).try(:text).try(:send, *options)
+      end
+    end
+  end
+end
 
 SettingsHelper.__send__(:include, SettingsHelperPatch)
 Mailer.__send__(:include, LoaderMailer)

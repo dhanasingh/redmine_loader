@@ -31,9 +31,9 @@ Redmine::Plugin.register :redmine_loader do
   name desc
   description desc
 
-  version '0.5'
+  version '0.6'
 
-  requires_redmine version_or_higher: '2.3.0'
+  requires_redmine version_or_higher: '5.1.3'
 
   default_tracker_alias = 'Tracker'
 

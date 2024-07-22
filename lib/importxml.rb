@@ -58,10 +58,10 @@ class Importxml
 		  eaCfHash.each do |attr, cfId|
 			cfValues[cfId] =  source_issue[attr]
 		  end
-		 
+
 		  issue.custom_field_values = cfValues
 		  Redmine::Hook.call_hook(:importxml_before_save_issue, { :issue => issue, :source_issue => source_issue })
-		  
+
           if issue.save!
             puts "DEBUG: Issue #{issue.subject} imported"
 
@@ -133,9 +133,9 @@ class Importxml
         parent_outlinenumber = source_issue[:outlinenumber].split('.')[0...-1].join('.')
         if parent_outlinenumber.present?
           if destination_issue = Issue.find_by_id_and_project_id(uid_to_issue_id[source_issue[:uid]], project_id)
-            destination_issue.update_attributes(parent_issue_id: outlinenumber_to_issue_id[parent_outlinenumber])
+            destination_issue.update(parent_issue_id: outlinenumber_to_issue_id[parent_outlinenumber])
 			parent_issue = Issue.try(:find, outlinenumber_to_issue_id[parent_outlinenumber])
-			parent_issue.update_attributes(estimated_hours: nil) unless parent_issue.blank? || parent_issue.estimated_hours.blank?
+			parent_issue.update(estimated_hours: nil) unless parent_issue.blank? || parent_issue.estimated_hours.blank?
           end
         end
       end
@@ -162,7 +162,7 @@ class Importxml
       milestones.each do |milestone|
         issue_ids = tasks.select { |i| i.predecessors.include? milestone.uid.to_s }.map { |task| uid_to_issue_id[task.uid] }
         Issue.where("id IN (?) AND project_id = ?", issue_ids, project_id).each do |issue|
-          issue.update_attributes(:fixed_version_id => uid_to_version_id[milestone.uid])
+          issue.update(:fixed_version_id => uid_to_version_id[milestone.uid])
         end
       end
     end
@@ -196,17 +196,17 @@ class Importxml
 				# Diffrence between task start and it's predessor end will save as delay in redmine.
 				# Redmine give the predessor end + 1 as task start date
 				# Because of this behavior start date varied from the task start date in the xml
-				
+
 				calcDelay = loder_helper.working_days(parentTask.due_date.to_date, source_issue.start_date.to_date)
 				relation.delay = calcDelay - 1
 				# Set the delay of the relation if it exists.
-				
+
 			  end
-			  if source_issue.try { |e| e.delays[index].to_i } # > 0 - commented this check because set the delay even it is negative 
+			  if source_issue.try { |e| e.delays[index].to_i } # > 0 - commented this check because set the delay even it is negative
 				actualDelay = (source_issue.delays[index].to_i)/4800.0
 			  end
-			  Redmine::Hook.call_hook(:importxml_before_save_issue_relation, { :relation => relation, :actual_delay => actualDelay, :source_issue => source_issue, :index => index })			  
-              relation.save			  
+			  Redmine::Hook.call_hook(:importxml_before_save_issue_relation, { :relation => relation, :actual_delay => actualDelay, :source_issue => source_issue, :index => index })
+              relation.save
             end
           end
         end
